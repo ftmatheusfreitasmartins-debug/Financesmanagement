@@ -42,7 +42,6 @@ import CurrencyConverter from '@/components/CurrencyConverter'
 import SavingsTracker from '@/components/SavingsTracker'
 import { format } from 'date-fns'
 
-
 interface NetlifyUser {
   email: string
   user_metadata: {
@@ -87,7 +86,7 @@ export default function Home() {
   const getBalance = useFinanceStore((state) => state.getBalance)
   const getTotalIncome = useFinanceStore((state) => state.getTotalIncome)
   const getTotalExpenses = useFinanceStore((state) => state.getTotalExpenses)
-  
+
   const [mounted, setMounted] = useState(false)
   const [userName, setUserName] = useState('Usuário')
   const [userRole, setUserRole] = useState('Membro')
@@ -99,7 +98,7 @@ export default function Home() {
     const updateUserData = () => {
       if (typeof window !== 'undefined' && window.netlifyIdentity) {
         const currentUser = window.netlifyIdentity.currentUser() as NetlifyUser | null
-        
+
         if (currentUser) {
           const name = currentUser.user_metadata?.full_name || 
                        currentUser.user_metadata?.name || 
@@ -121,7 +120,7 @@ export default function Home() {
     if (typeof window !== 'undefined' && window.netlifyIdentity) {
       window.netlifyIdentity.on('login', updateUserData)
       window.netlifyIdentity.on('init', updateUserData)
-      
+
       // Verificar mudanças a cada 5 segundos
       const interval = setInterval(updateUserData, 5000)
 
@@ -136,8 +135,6 @@ export default function Home() {
     }
   }, [salary, isAuthenticated])
 
-
-  // ✅ CORRIGIDO: Verificações DEPOIS do useEffect
   if (!mounted || authLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-accent-400 via-accent-500 to-accent-600 flex items-center justify-center">
@@ -169,7 +166,6 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-accent-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 transition-colors duration-300">
-      {/* HEADER ORIGINAL */}
       <motion.header
         initial={{ y: -100 }}
         animate={{ y: 0 }}
@@ -178,7 +174,7 @@ export default function Home() {
       >
         <div className="container mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between py-3 sm:py-4">
-            
+
             <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
               <div className="flex-shrink-0 bg-gradient-to-br from-accent-400 to-accent-500 p-2 sm:p-2.5 rounded-xl shadow-lg">
                 <Wallet className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
@@ -192,29 +188,27 @@ export default function Home() {
                 </p>
               </div>
             </div>
-            
+
             <div className="flex items-center gap-2 sm:gap-2.5 flex-shrink-0">
               <Notifications />
               <DarkModeToggle />
               <div className="hidden sm:block w-px h-8 bg-gray-300 dark:bg-gray-600"></div>
-              
+
               <div className="flex items-center gap-2">
-                {/* Avatar + Nome Matheus/Desenvolvedor */}
                 <div className="hidden md:flex items-center gap-2.5 px-3 py-1.5 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
                   <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-md">
-                    M
+                    {userName.charAt(0).toUpperCase()}
                   </div>
                   <div className="text-left">
                     <p className="text-xs font-semibold text-gray-900 dark:text-white leading-tight">
-                      Matheus
+                      {userName}
                     </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400 leading-tight">
-                      Desenvolvedor
+                      {userRole}
                     </p>
                   </div>
                 </div>
-                
-                {/* Botão Salário */}
+
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
@@ -225,8 +219,7 @@ export default function Home() {
                   <Settings className="w-4 h-4" />
                   <span className="hidden sm:inline">Salário</span>
                 </motion.button>
-                
-                {/* Botão Sair */}
+
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
@@ -243,7 +236,6 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Navigation Tabs */}
           <div className="flex gap-1.5 sm:gap-2 overflow-x-auto pb-3 scrollbar-hide -mx-1 px-1">
             <motion.button
               whileHover={{ scale: 1.02 }}
@@ -258,7 +250,7 @@ export default function Home() {
               <Wallet className="w-4 h-4" />
               <span className="hidden sm:inline">Visão Geral</span>
             </motion.button>
-            
+
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
@@ -272,7 +264,7 @@ export default function Home() {
               <Receipt className="w-4 h-4" />
               <span className="hidden sm:inline">Transações</span>
             </motion.button>
-            
+
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
@@ -286,7 +278,7 @@ export default function Home() {
               <BarChart3 className="w-4 h-4" />
               <span className="hidden sm:inline">Análises</span>
             </motion.button>
-            
+
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
@@ -300,7 +292,7 @@ export default function Home() {
               <Settings className="w-4 h-4" />
               <span className="hidden sm:inline">Gestão</span>
             </motion.button>
-            
+
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
@@ -318,12 +310,10 @@ export default function Home() {
         </div>
       </motion.header>
 
-      {/* Main Content */}
       <main className="container mx-auto px-6 py-8">
         <SmartAlerts />
         {currentView === 'overview' && <QuickSummary />}
 
-        {/* VISÃO GERAL */}
         {currentView === 'overview' && (
           <>
             <div className="mb-8">
@@ -375,7 +365,6 @@ export default function Home() {
           </>
         )}
 
-        {/* TRANSAÇÕES */}
         {currentView === 'transactions' && (
           <div>
             <div className="mb-8">
@@ -403,7 +392,6 @@ export default function Home() {
           </div>
         )}
 
-        {/* ANÁLISES */}
         {currentView === 'analytics' && (
           <>
             <div className="mb-8">
@@ -426,7 +414,6 @@ export default function Home() {
           </>
         )}
 
-        {/* GESTÃO */}
         {currentView === 'management' && (
           <>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
@@ -442,7 +429,6 @@ export default function Home() {
           </>
         )}
 
-        {/* FERRAMENTAS */}
         {currentView === 'tools' && (
           <>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
@@ -461,7 +447,6 @@ export default function Home() {
         )}
       </main>
 
-      {/* Salary Modal */}
       {showSalaryModal && (
         <motion.div
           initial={{ opacity: 0 }}
@@ -516,7 +501,6 @@ export default function Home() {
 
       <TransactionForm />
 
-      {/* Footer */}
       <footer className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg border-t border-gray-200 dark:border-gray-700 mt-16">
         <div className="container mx-auto px-6 py-6">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
