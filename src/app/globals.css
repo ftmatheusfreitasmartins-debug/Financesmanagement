@@ -358,13 +358,14 @@ body::-webkit-scrollbar-thumb:active {
 input::-webkit-outer-spin-button,
 input::-webkit-inner-spin-button {
   -webkit-appearance: none;
+  appearance: none; /* ✅ Propriedade padrão adicionada */
   margin: 0;
 }
 
 input[type=number] {
   -moz-appearance: textfield;
+  appearance: textfield; /* ✅ Propriedade padrão adicionada */
 }
-
 /* ============================================
    OTIMIZAÇÕES DE PERFORMANCE
    ============================================ */

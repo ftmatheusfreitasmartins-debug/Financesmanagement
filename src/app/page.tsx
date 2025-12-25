@@ -304,7 +304,7 @@ function TabButton({
               <ExpenseChart />
               <div>
                 <AdvancedFilters onFilterChange={setFilters} />
-                <TransactionList filters={filters} />
+                <TransactionList />
               </div>
             </div>
           </>
@@ -336,7 +336,7 @@ function TabButton({
                 Histórico Completo
               </h3>
               <AdvancedFilters onFilterChange={setFilters} />
-              <TransactionList filters={filters} />
+              <TransactionList />
             </div>
           </div>
         )}
