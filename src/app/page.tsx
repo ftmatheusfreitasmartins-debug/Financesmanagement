@@ -135,7 +135,7 @@ function TabButton({
         </div>
         <div className="min-w-0">
           <h1 className="text-base sm:text-xl md:text-2xl font-bold text-gray-900 dark:text-white truncate">
-            Finance Manager
+            Finance Manager Pro
           </h1>
           <p className="hidden sm:block text-xs text-gray-500 dark:text-gray-400 truncate">
             Controle financeiro inteligente
@@ -184,66 +184,143 @@ function TabButton({
             <span className="hidden sm:inline">Salário</span>
           </motion.button>
           
-          {/* Botão Sair */}
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => {
-              if (confirm('Deseja realmente sair?')) {
-                window.location.reload()
-              }
-            }}
-            className="flex items-center gap-1.5 bg-red-500 hover:bg-red-600 text-white px-2.5 sm:px-3.5 py-2 rounded-lg transition-all shadow-md hover:shadow-lg text-sm font-medium"
-            title="Sair do sistema"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-            </svg>
-            <span className="hidden sm:inline">Sair</span>
-          </motion.button>
+          {/* Menu Dropdown de Sair */}
+          <div className="relative group">
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="flex items-center gap-1.5 bg-red-500 hover:bg-red-600 text-white px-2.5 sm:px-3.5 py-2 rounded-lg transition-all shadow-md hover:shadow-lg text-sm font-medium"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
+              <span className="hidden sm:inline">Sair</span>
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </motion.button>
+            
+            {/* Dropdown Menu */}
+            <div className="hidden group-hover:block absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden z-50">
+              <button
+                onClick={() => {
+                  if (confirm('Deseja reiniciar o app mantendo seus dados salvos?')) {
+                    sessionStorage.clear()
+                    window.location.reload()
+                  }
+                }}
+                className="w-full px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700 text-sm transition-colors flex items-center gap-2"
+              >
+                <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                <div>
+                  <div className="font-medium text-gray-900 dark:text-white">Reiniciar App</div>
+                  <div className="text-xs text-gray-500">Mantém todos os dados</div>
+                </div>
+              </button>
+              
+              <button
+                onClick={() => {
+                  if (confirm('⚠️ ATENÇÃO: Isso irá APAGAR TODOS OS DADOS! Tem certeza?')) {
+                    if (confirm('Última chance! Todos os dados serão perdidos. Continuar?')) {
+                      localStorage.removeItem('finance-storage')
+                      sessionStorage.clear()
+                      window.location.reload()
+                    }
+                  }
+                }}
+                className="w-full px-4 py-3 text-left hover:bg-red-50 dark:hover:bg-red-900/20 text-sm transition-colors flex items-center gap-2 border-t border-gray-200 dark:border-gray-700"
+              >
+                <svg className="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+                <div>
+                  <div className="font-medium text-red-600 dark:text-red-400">Apagar Tudo</div>
+                  <div className="text-xs text-red-500/70">Remove todos os dados</div>
+                </div>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
     
     {/* Navigation Tabs - Segunda linha */}
     <div className="flex gap-1.5 sm:gap-2 overflow-x-auto pb-3 scrollbar-hide -mx-1 px-1">
-      <TabButton
-        active={currentView === 'overview'}
+      <motion.button
+        whileHover={{ scale: 1.02 }}
+        whileTap={{ scale: 0.98 }}
         onClick={() => setCurrentView('overview')}
-        icon={<Wallet className="w-4 h-4" />}
-        label="Visão Geral"
-      />
+        className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg font-medium transition-all whitespace-nowrap text-xs sm:text-sm ${
+          currentView === 'overview'
+            ? 'bg-gradient-to-r from-accent-500 to-accent-600 text-white shadow-lg shadow-accent-500/30'
+            : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+        }`}
+      >
+        <Wallet className="w-4 h-4" />
+        <span className="hidden sm:inline">Visão Geral</span>
+      </motion.button>
       
-      <TabButton
-        active={currentView === 'transactions'}
+      <motion.button
+        whileHover={{ scale: 1.02 }}
+        whileTap={{ scale: 0.98 }}
         onClick={() => setCurrentView('transactions')}
-        icon={<Receipt className="w-4 h-4" />}
-        label="Transações"
-      />
+        className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg font-medium transition-all whitespace-nowrap text-xs sm:text-sm ${
+          currentView === 'transactions'
+            ? 'bg-gradient-to-r from-accent-500 to-accent-600 text-white shadow-lg shadow-accent-500/30'
+            : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+        }`}
+      >
+        <Receipt className="w-4 h-4" />
+        <span className="hidden sm:inline">Transações</span>
+      </motion.button>
       
-      <TabButton
-        active={currentView === 'analytics'}
+      <motion.button
+        whileHover={{ scale: 1.02 }}
+        whileTap={{ scale: 0.98 }}
         onClick={() => setCurrentView('analytics')}
-        icon={<BarChart3 className="w-4 h-4" />}
-        label="Análises"
-      />
+        className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg font-medium transition-all whitespace-nowrap text-xs sm:text-sm ${
+          currentView === 'analytics'
+            ? 'bg-gradient-to-r from-accent-500 to-accent-600 text-white shadow-lg shadow-accent-500/30'
+            : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+        }`}
+      >
+        <BarChart3 className="w-4 h-4" />
+        <span className="hidden sm:inline">Análises</span>
+      </motion.button>
       
-      <TabButton
-        active={currentView === 'management'}
+      <motion.button
+        whileHover={{ scale: 1.02 }}
+        whileTap={{ scale: 0.98 }}
         onClick={() => setCurrentView('management')}
-        icon={<Settings className="w-4 h-4" />}
-        label="Gestão"
-      />
+        className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg font-medium transition-all whitespace-nowrap text-xs sm:text-sm ${
+          currentView === 'management'
+            ? 'bg-gradient-to-r from-accent-500 to-accent-600 text-white shadow-lg shadow-accent-500/30'
+            : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+        }`}
+      >
+        <Settings className="w-4 h-4" />
+        <span className="hidden sm:inline">Gestão</span>
+      </motion.button>
       
-      <TabButton
-        active={currentView === 'tools'}
+      <motion.button
+        whileHover={{ scale: 1.02 }}
+        whileTap={{ scale: 0.98 }}
         onClick={() => setCurrentView('tools')}
-        icon={<Calculator className="w-4 h-4" />}
-        label="Ferramentas"
-      />
+        className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg font-medium transition-all whitespace-nowrap text-xs sm:text-sm ${
+          currentView === 'tools'
+            ? 'bg-gradient-to-r from-accent-500 to-accent-600 text-white shadow-lg shadow-accent-500/30'
+            : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+        }`}
+      >
+        <Calculator className="w-4 h-4" />
+        <span className="hidden sm:inline">Ferramentas</span>
+      </motion.button>
     </div>
   </div>
 </motion.header>
+
 
 
       {/* Main Content */}

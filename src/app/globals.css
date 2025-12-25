@@ -376,3 +376,28 @@ input[type=number] {
 img {
   content-visibility: auto;
 }
+/* ===== DROPDOWN MENU ANIMATION ===== */
+.group:hover > div {
+  animation: fadeInDropdown 0.2s ease-in-out;
+}
+
+@keyframes fadeInDropdown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ===== SCROLLBAR HIDE ===== */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
