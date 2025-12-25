@@ -42,6 +42,30 @@ import CurrencyConverter from '@/components/CurrencyConverter'
 import SavingsTracker from '@/components/SavingsTracker'
 import { format } from 'date-fns'
 
+
+interface NetlifyUser {
+  email: string
+  user_metadata: {
+    full_name?: string
+    name?: string
+    avatar_url?: string
+  }
+  app_metadata: {
+    roles?: string[]
+  }
+}
+
+declare global {
+  interface Window {
+    netlifyIdentity: {
+      currentUser(): NetlifyUser | null
+      on(event: string, callback: (user: NetlifyUser | null) => void): void
+      open(tab?: 'signup' | 'login'): void
+      close(): void
+    }
+  }
+}
+
 export default function Home() {
   const { isAuthenticated, user, loading: authLoading, logout } = useAuth()
 
@@ -65,14 +89,53 @@ export default function Home() {
   const getTotalExpenses = useFinanceStore((state) => state.getTotalExpenses)
   
   const [mounted, setMounted] = useState(false)
+  const [userName, setUserName] = useState('Usuário')
+  const [userRole, setUserRole] = useState('Membro')
 
-  // ✅ CORRIGIDO: useEffect PRIMEIRO
   useEffect(() => {
     setMounted(true)
+
+    // Função para atualizar dados do usuário
+    const updateUserData = () => {
+      if (typeof window !== 'undefined' && window.netlifyIdentity) {
+        const currentUser = window.netlifyIdentity.currentUser() as NetlifyUser | null
+        
+        if (currentUser) {
+          const name = currentUser.user_metadata?.full_name || 
+                       currentUser.user_metadata?.name || 
+                       currentUser.email.split('@')[0]
+          setUserName(name)
+
+          const roles = currentUser.app_metadata?.roles || []
+          if (roles.length > 0) {
+            setUserRole(roles[0])
+          }
+        }
+      }
+    }
+
+    // Atualizar dados inicialmente
+    updateUserData()
+
+    // Adicionar listener para mudanças no usuário
+    if (typeof window !== 'undefined' && window.netlifyIdentity) {
+      window.netlifyIdentity.on('login', updateUserData)
+      window.netlifyIdentity.on('init', updateUserData)
+      
+      // Verificar mudanças a cada 5 segundos
+      const interval = setInterval(updateUserData, 5000)
+
+      // Cleanup: remover listeners quando o componente desmontar
+      return () => {
+        clearInterval(interval)
+      }
+    }
+
     if (salary === 0 && isAuthenticated) {
       setShowSalaryModal(true)
     }
   }, [salary, isAuthenticated])
+
 
   // ✅ CORRIGIDO: Verificações DEPOIS do useEffect
   if (!mounted || authLoading) {
