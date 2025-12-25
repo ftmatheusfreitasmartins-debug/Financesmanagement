@@ -12,8 +12,11 @@ import {
   Zap,
   Calculator,
   Receipt,
+  LogOut,
 } from 'lucide-react'
 import { useFinanceStore } from '@/store/financeStore'
+import { useAuth } from '@/components/AuthScreen'
+import AuthScreen from '@/components/AuthScreen'
 import StatCard from '@/components/StatCard'
 import TransactionForm from '@/components/TransactionForm'
 import TransactionList from '@/components/TransactionList'
@@ -40,6 +43,8 @@ import SavingsTracker from '@/components/SavingsTracker'
 import { format } from 'date-fns'
 
 export default function Home() {
+  const { isAuthenticated, user, loading: authLoading, logout } = useAuth()
+
   const [salaryInput, setSalaryInput] = useState('')
   const [showSalaryModal, setShowSalaryModal] = useState(false)
   const [currentView, setCurrentView] = useState<'overview' | 'transactions' | 'analytics' | 'management' | 'tools'>('overview')
@@ -61,14 +66,29 @@ export default function Home() {
   
   const [mounted, setMounted] = useState(false)
 
+  // ✅ CORRIGIDO: useEffect PRIMEIRO
   useEffect(() => {
     setMounted(true)
-    if (salary === 0) {
+    if (salary === 0 && isAuthenticated) {
       setShowSalaryModal(true)
     }
-  }, [salary])
+  }, [salary, isAuthenticated])
 
-  if (!mounted) return null
+  // ✅ CORRIGIDO: Verificações DEPOIS do useEffect
+  if (!mounted || authLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-accent-400 via-accent-500 to-accent-600 flex items-center justify-center">
+        <div className="text-white text-center">
+          <div className="w-12 h-12 border-4 border-white border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-lg font-medium">Carregando...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!isAuthenticated) {
+    return <AuthScreen />
+  }
 
   const balance = getBalance()
   const totalIncome = getTotalIncome()
@@ -83,263 +103,170 @@ export default function Home() {
       setSalaryInput('')
     }
   }
-// Componente auxiliar para os botões de navegação
-function TabButton({ 
-  active, 
-  onClick, 
-  icon, 
-  label 
-}: { 
-  active: boolean
-  onClick: () => void
-  icon: React.ReactNode
-  label: string
-}) {
-  return (
-    <motion.button
-      whileHover={{ scale: 1.02 }}
-      whileTap={{ scale: 0.98 }}
-      onClick={onClick}
-      className={`
-        flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg font-medium 
-        transition-all whitespace-nowrap text-xs sm:text-sm
-        ${active 
-          ? 'bg-gradient-to-r from-accent-500 to-accent-600 text-white shadow-lg shadow-accent-500/30' 
-          : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-        }
-      `}
-    >
-      {icon}
-      <span className="hidden sm:inline">{label}</span>
-    </motion.button>
-  )
-}
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-accent-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 transition-colors duration-300">
-{/* ===== HEADER MELHORADO E ORGANIZADO ===== */}
-<motion.header
-  initial={{ y: -100 }}
-  animate={{ y: 0 }}
-  transition={{ duration: 0.5 }}
-  className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-lg border-b border-gray-200 dark:border-gray-700 sticky top-0 z-30 shadow-sm"
->
-  <div className="container mx-auto px-4 sm:px-6">
-    {/* Linha principal */}
-    <div className="flex items-center justify-between py-3 sm:py-4">
-      
-      {/* Logo e Título - Esquerda */}
-      <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-        <div className="flex-shrink-0 bg-gradient-to-br from-accent-400 to-accent-500 p-2 sm:p-2.5 rounded-xl shadow-lg">
-          <Wallet className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
-        </div>
-        <div className="min-w-0">
-          <h1 className="text-base sm:text-xl md:text-2xl font-bold text-gray-900 dark:text-white truncate">
-            Finance Manager Pro
-          </h1>
-          <p className="hidden sm:block text-xs text-gray-500 dark:text-gray-400 truncate">
-            Controle financeiro inteligente
-          </p>
-        </div>
-      </div>
-      
-      {/* Área de Ações - Direita */}
-      <div className="flex items-center gap-2 sm:gap-2.5 flex-shrink-0">
-        
-        {/* Badge de Notificações */}
-        <Notifications />
-        
-        {/* Dark Mode Toggle */}
-        <DarkModeToggle />
-        
-        {/* Divider vertical (apenas desktop) */}
-        <div className="hidden sm:block w-px h-8 bg-gray-300 dark:bg-gray-600"></div>
-        
-        {/* Informações do Usuário (desktop) + Ações */}
-        <div className="flex items-center gap-2">
-          {/* Avatar + Nome (apenas desktop) */}
-          <div className="hidden md:flex items-center gap-2.5 px-3 py-1.5 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-md">
-              M
+      {/* HEADER ORIGINAL */}
+      <motion.header
+        initial={{ y: -100 }}
+        animate={{ y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-lg border-b border-gray-200 dark:border-gray-700 sticky top-0 z-30 shadow-sm"
+      >
+        <div className="container mx-auto px-4 sm:px-6">
+          <div className="flex items-center justify-between py-3 sm:py-4">
+            
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+              <div className="flex-shrink-0 bg-gradient-to-br from-accent-400 to-accent-500 p-2 sm:p-2.5 rounded-xl shadow-lg">
+                <Wallet className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+              </div>
+              <div className="min-w-0">
+                <h1 className="text-base sm:text-xl md:text-2xl font-bold text-gray-900 dark:text-white truncate">
+                  Finance Manager Pro
+                </h1>
+                <p className="hidden sm:block text-xs text-gray-500 dark:text-gray-400 truncate">
+                  Controle financeiro inteligente
+                </p>
+              </div>
             </div>
-            <div className="text-left">
-              <p className="text-xs font-semibold text-gray-900 dark:text-white leading-tight">
-                Matheus
-              </p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 leading-tight">
-                Desenvolvedor
-              </p>
+            
+            <div className="flex items-center gap-2 sm:gap-2.5 flex-shrink-0">
+              <Notifications />
+              <DarkModeToggle />
+              <div className="hidden sm:block w-px h-8 bg-gray-300 dark:bg-gray-600"></div>
+              
+              <div className="flex items-center gap-2">
+                {/* Avatar + Nome Matheus/Desenvolvedor */}
+                <div className="hidden md:flex items-center gap-2.5 px-3 py-1.5 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
+                  <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-md">
+                    M
+                  </div>
+                  <div className="text-left">
+                    <p className="text-xs font-semibold text-gray-900 dark:text-white leading-tight">
+                      Matheus
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 leading-tight">
+                      Desenvolvedor
+                    </p>
+                  </div>
+                </div>
+                
+                {/* Botão Salário */}
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setShowSalaryModal(true)}
+                  className="flex items-center gap-1.5 sm:gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-2.5 sm:px-3.5 py-2 rounded-lg transition-all shadow-md hover:shadow-lg text-sm font-medium"
+                  title="Configurar Salário"
+                >
+                  <Settings className="w-4 h-4" />
+                  <span className="hidden sm:inline">Salário</span>
+                </motion.button>
+                
+                {/* Botão Sair */}
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={logout}
+                  className="flex items-center gap-1.5 bg-red-500 hover:bg-red-600 text-white px-2.5 sm:px-3.5 py-2 rounded-lg transition-all shadow-md hover:shadow-lg text-sm font-medium"
+                  title="Sair da conta"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  </svg>
+                  <span className="hidden sm:inline">Sair</span>
+                </motion.button>
+              </div>
             </div>
           </div>
-          
-          {/* Botão Salário */}
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setShowSalaryModal(true)}
-            className="flex items-center gap-1.5 sm:gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-2.5 sm:px-3.5 py-2 rounded-lg transition-all shadow-md hover:shadow-lg text-sm font-medium"
-            title="Configurar Salário"
-          >
-            <Settings className="w-4 h-4" />
-            <span className="hidden sm:inline">Salário</span>
-          </motion.button>
-          
-          {/* Menu Dropdown de Sair */}
-          <div className="relative group">
+
+          {/* Navigation Tabs */}
+          <div className="flex gap-1.5 sm:gap-2 overflow-x-auto pb-3 scrollbar-hide -mx-1 px-1">
             <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="flex items-center gap-1.5 bg-red-500 hover:bg-red-600 text-white px-2.5 sm:px-3.5 py-2 rounded-lg transition-all shadow-md hover:shadow-lg text-sm font-medium"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => setCurrentView('overview')}
+              className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg font-medium transition-all whitespace-nowrap text-xs sm:text-sm ${
+                currentView === 'overview'
+                  ? 'bg-gradient-to-r from-accent-500 to-accent-600 text-white shadow-lg shadow-accent-500/30'
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+              }`}
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-              </svg>
-              <span className="hidden sm:inline">Sair</span>
-              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
+              <Wallet className="w-4 h-4" />
+              <span className="hidden sm:inline">Visão Geral</span>
             </motion.button>
             
-            {/* Dropdown Menu */}
-            <div className="hidden group-hover:block absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden z-50">
-              <button
-                onClick={() => {
-                  if (confirm('Deseja reiniciar o app mantendo seus dados salvos?')) {
-                    sessionStorage.clear()
-                    window.location.reload()
-                  }
-                }}
-                className="w-full px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700 text-sm transition-colors flex items-center gap-2"
-              >
-                <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-                <div>
-                  <div className="font-medium text-gray-900 dark:text-white">Reiniciar App</div>
-                  <div className="text-xs text-gray-500">Mantém todos os dados</div>
-                </div>
-              </button>
-              
-              <button
-                onClick={() => {
-                  if (confirm('⚠️ ATENÇÃO: Isso irá APAGAR TODOS OS DADOS! Tem certeza?')) {
-                    if (confirm('Última chance! Todos os dados serão perdidos. Continuar?')) {
-                      localStorage.removeItem('finance-storage')
-                      sessionStorage.clear()
-                      window.location.reload()
-                    }
-                  }
-                }}
-                className="w-full px-4 py-3 text-left hover:bg-red-50 dark:hover:bg-red-900/20 text-sm transition-colors flex items-center gap-2 border-t border-gray-200 dark:border-gray-700"
-              >
-                <svg className="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                </svg>
-                <div>
-                  <div className="font-medium text-red-600 dark:text-red-400">Apagar Tudo</div>
-                  <div className="text-xs text-red-500/70">Remove todos os dados</div>
-                </div>
-              </button>
-            </div>
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => setCurrentView('transactions')}
+              className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg font-medium transition-all whitespace-nowrap text-xs sm:text-sm ${
+                currentView === 'transactions'
+                  ? 'bg-gradient-to-r from-accent-500 to-accent-600 text-white shadow-lg shadow-accent-500/30'
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+              }`}
+            >
+              <Receipt className="w-4 h-4" />
+              <span className="hidden sm:inline">Transações</span>
+            </motion.button>
+            
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => setCurrentView('analytics')}
+              className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg font-medium transition-all whitespace-nowrap text-xs sm:text-sm ${
+                currentView === 'analytics'
+                  ? 'bg-gradient-to-r from-accent-500 to-accent-600 text-white shadow-lg shadow-accent-500/30'
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+              }`}
+            >
+              <BarChart3 className="w-4 h-4" />
+              <span className="hidden sm:inline">Análises</span>
+            </motion.button>
+            
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => setCurrentView('management')}
+              className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg font-medium transition-all whitespace-nowrap text-xs sm:text-sm ${
+                currentView === 'management'
+                  ? 'bg-gradient-to-r from-accent-500 to-accent-600 text-white shadow-lg shadow-accent-500/30'
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+              }`}
+            >
+              <Settings className="w-4 h-4" />
+              <span className="hidden sm:inline">Gestão</span>
+            </motion.button>
+            
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => setCurrentView('tools')}
+              className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg font-medium transition-all whitespace-nowrap text-xs sm:text-sm ${
+                currentView === 'tools'
+                  ? 'bg-gradient-to-r from-accent-500 to-accent-600 text-white shadow-lg shadow-accent-500/30'
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+              }`}
+            >
+              <Calculator className="w-4 h-4" />
+              <span className="hidden sm:inline">Ferramentas</span>
+            </motion.button>
           </div>
         </div>
-      </div>
-    </div>
-    
-    {/* Navigation Tabs - Segunda linha */}
-    <div className="flex gap-1.5 sm:gap-2 overflow-x-auto pb-3 scrollbar-hide -mx-1 px-1">
-      <motion.button
-        whileHover={{ scale: 1.02 }}
-        whileTap={{ scale: 0.98 }}
-        onClick={() => setCurrentView('overview')}
-        className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg font-medium transition-all whitespace-nowrap text-xs sm:text-sm ${
-          currentView === 'overview'
-            ? 'bg-gradient-to-r from-accent-500 to-accent-600 text-white shadow-lg shadow-accent-500/30'
-            : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-        }`}
-      >
-        <Wallet className="w-4 h-4" />
-        <span className="hidden sm:inline">Visão Geral</span>
-      </motion.button>
-      
-      <motion.button
-        whileHover={{ scale: 1.02 }}
-        whileTap={{ scale: 0.98 }}
-        onClick={() => setCurrentView('transactions')}
-        className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg font-medium transition-all whitespace-nowrap text-xs sm:text-sm ${
-          currentView === 'transactions'
-            ? 'bg-gradient-to-r from-accent-500 to-accent-600 text-white shadow-lg shadow-accent-500/30'
-            : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-        }`}
-      >
-        <Receipt className="w-4 h-4" />
-        <span className="hidden sm:inline">Transações</span>
-      </motion.button>
-      
-      <motion.button
-        whileHover={{ scale: 1.02 }}
-        whileTap={{ scale: 0.98 }}
-        onClick={() => setCurrentView('analytics')}
-        className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg font-medium transition-all whitespace-nowrap text-xs sm:text-sm ${
-          currentView === 'analytics'
-            ? 'bg-gradient-to-r from-accent-500 to-accent-600 text-white shadow-lg shadow-accent-500/30'
-            : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-        }`}
-      >
-        <BarChart3 className="w-4 h-4" />
-        <span className="hidden sm:inline">Análises</span>
-      </motion.button>
-      
-      <motion.button
-        whileHover={{ scale: 1.02 }}
-        whileTap={{ scale: 0.98 }}
-        onClick={() => setCurrentView('management')}
-        className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg font-medium transition-all whitespace-nowrap text-xs sm:text-sm ${
-          currentView === 'management'
-            ? 'bg-gradient-to-r from-accent-500 to-accent-600 text-white shadow-lg shadow-accent-500/30'
-            : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-        }`}
-      >
-        <Settings className="w-4 h-4" />
-        <span className="hidden sm:inline">Gestão</span>
-      </motion.button>
-      
-      <motion.button
-        whileHover={{ scale: 1.02 }}
-        whileTap={{ scale: 0.98 }}
-        onClick={() => setCurrentView('tools')}
-        className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg font-medium transition-all whitespace-nowrap text-xs sm:text-sm ${
-          currentView === 'tools'
-            ? 'bg-gradient-to-r from-accent-500 to-accent-600 text-white shadow-lg shadow-accent-500/30'
-            : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-        }`}
-      >
-        <Calculator className="w-4 h-4" />
-        <span className="hidden sm:inline">Ferramentas</span>
-      </motion.button>
-    </div>
-  </div>
-</motion.header>
-
-
+      </motion.header>
 
       {/* Main Content */}
       <main className="container mx-auto px-6 py-8">
-        {/* Smart Alerts */}
         <SmartAlerts />
-
-        {/* Quick Summary */}
         {currentView === 'overview' && <QuickSummary />}
 
         {/* VISÃO GERAL */}
         {currentView === 'overview' && (
           <>
-            {/* Dinheiro Guardado */}
             <div className="mb-8">
               <SavingsTracker />
             </div>
 
-            {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
               <StatCard
                 title="Saldo Disponível"
@@ -371,12 +298,10 @@ function TabButton({
               />
             </div>
 
-            {/* Monthly Trend */}
             <div className="mb-8">
               <MonthlyChart />
             </div>
 
-            {/* Charts & Transactions */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
               <ExpenseChart />
               <div>
@@ -387,7 +312,7 @@ function TabButton({
           </>
         )}
 
-        {/* TRANSAÇÕES - NOVA ABA */}
+        {/* TRANSAÇÕES */}
         {currentView === 'transactions' && (
           <div>
             <div className="mb-8">
@@ -397,17 +322,14 @@ function TabButton({
               </h2>
             </div>
 
-            {/* Calendário de Próximos Pagamentos */}
             <div className="mb-8">
               <RecurringCalendar />
             </div>
 
-            {/* Transações Recorrentes */}
             <div className="mb-8">
               <RecurringManager />
             </div>
 
-            {/* Lista de Todas as Transações */}
             <div>
               <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
                 Histórico Completo
@@ -529,7 +451,6 @@ function TabButton({
         </motion.div>
       )}
 
-      {/* Transaction Form FAB */}
       <TransactionForm />
 
       {/* Footer */}

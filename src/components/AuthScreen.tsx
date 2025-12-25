@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Shield, Loader2, LogIn, UserPlus } from 'lucide-react'
+import { Shield, Loader2, LogIn, UserPlus, LogOut } from 'lucide-react'
 
 // Tipagem do Netlify Identity
 interface NetlifyUser {
@@ -16,31 +16,34 @@ interface NetlifyUser {
 // ============================================
 // 🔐 NETLIFY IDENTITY MANAGER
 // ============================================
-
 class NetlifyAuthManager {
   private static netlifyIdentity: any = null
+  private static initialized = false
 
   static async init(): Promise<void> {
-    if (typeof window === 'undefined') return
+    if (typeof window === 'undefined' || this.initialized) return
 
     try {
       const netlifyIdentity = await import('netlify-identity-widget')
       this.netlifyIdentity = netlifyIdentity.default || netlifyIdentity
-
       this.netlifyIdentity.init({ locale: 'pt' })
-
+      
       this.netlifyIdentity.on('login', (user: NetlifyUser) => {
-        console.log('Login:', user.email)
+        console.log('✅ Login bem-sucedido:', user.email)
         this.netlifyIdentity.close()
         window.location.reload()
       })
 
       this.netlifyIdentity.on('logout', () => {
-        console.log('Logout')
+        console.log('✅ Logout bem-sucedido')
+        // Limpa TODOS os dados do localStorage
+        this.clearAllStorage()
         window.location.reload()
       })
+
+      this.initialized = true
     } catch (error) {
-      console.error('Erro ao carregar Netlify Identity:', error)
+      console.error('❌ Erro ao carregar Netlify Identity:', error)
     }
   }
 
@@ -53,7 +56,15 @@ class NetlifyAuthManager {
   }
 
   static logout(): void {
-    if (this.netlifyIdentity) this.netlifyIdentity.logout()
+    if (this.netlifyIdentity) {
+      console.log('🔄 Iniciando logout...')
+      this.netlifyIdentity.logout()
+      // Força limpeza imediata
+      setTimeout(() => {
+        this.clearAllStorage()
+        window.location.href = '/'
+      }, 500)
+    }
   }
 
   static getCurrentUser(): NetlifyUser | null {
@@ -63,12 +74,30 @@ class NetlifyAuthManager {
   static isAuthenticated(): boolean {
     return this.getCurrentUser() !== null
   }
+
+  // ✅ NOVA FUNÇÃO: Limpa todo o localStorage
+  static clearAllStorage(): void {
+    try {
+      // Remove dados financeiros
+      localStorage.removeItem('finance-storage')
+      
+      // Remove tokens do Netlify Identity
+      localStorage.removeItem('gotrue.user')
+      localStorage.removeItem('netlify-identity-user')
+      
+      // Limpa sessionStorage também
+      sessionStorage.clear()
+      
+      console.log('🧹 LocalStorage limpo')
+    } catch (error) {
+      console.error('Erro ao limpar storage:', error)
+    }
+  }
 }
 
 // ============================================
-// 🎨 COMPONENTE
+// 🎨 COMPONENTE PRINCIPAL
 // ============================================
-
 export default function AuthScreen() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [currentUser, setCurrentUser] = useState<NetlifyUser | null>(null)
@@ -85,6 +114,7 @@ export default function AuthScreen() {
 
     initAuth()
 
+    // Verifica autenticação a cada 500ms
     const checkAuth = setInterval(() => {
       const user = NetlifyAuthManager.getCurrentUser()
       setIsAuthenticated(!!user)
@@ -94,54 +124,38 @@ export default function AuthScreen() {
     return () => clearInterval(checkAuth)
   }, [])
 
+  // Se está autenticado, não mostra a tela de login
   if (isAuthenticated && currentUser) return null
 
   if (loading) {
     return (
-      <div className="fixed inset-0 bg-gradient-to-br from-primary-900 via-primary-800 to-accent-900 flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="w-16 h-16 text-white animate-spin mx-auto mb-4" />
-          <p className="text-white text-xl font-semibold">Carregando...</p>
+      <div className="min-h-screen bg-gradient-to-br from-accent-400 via-accent-500 to-accent-600 flex items-center justify-center">
+        <div className="text-white text-center">
+          <Loader2 className="w-12 h-12 animate-spin mx-auto mb-4" />
+          <p className="text-lg font-medium">Carregando...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-primary-900 via-primary-800 to-accent-900 flex items-center justify-center p-4 z-50">
-      <div className="absolute inset-0 overflow-hidden">
-        <motion.div
-          animate={{ scale: [1, 1.2, 1], rotate: [0, 90, 0] }}
-          transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-          className="absolute -top-1/2 -left-1/2 w-full h-full bg-accent-500/10 rounded-full blur-3xl"
-        />
-      </div>
-
+    <div className="min-h-screen bg-gradient-to-br from-accent-400 via-accent-500 to-accent-600 flex items-center justify-center p-4">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="relative bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden"
+        className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl p-8 md:p-12 max-w-md w-full"
       >
-        <div className="bg-gradient-to-r from-accent-500 to-accent-600 p-8 text-center">
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ type: "spring", duration: 0.5 }}
-            className="inline-flex items-center justify-center w-20 h-20 bg-white/20 rounded-full mb-4"
-          >
-            <Shield className="w-10 h-10 text-white" />
-          </motion.div>
-          <h1 className="text-3xl font-bold text-white mb-2">Finance Manager Pro</h1>
-          <p className="text-accent-100">Sistema de Gestão Financeira</p>
+        <div className="text-center mb-8">
+          <div className="bg-accent-100 dark:bg-accent-900/30 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Shield className="w-10 h-10 text-accent-600" />
+          </div>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+            Finance Manager Pro
+          </h1>
+          <p className="text-gray-600 dark:text-gray-400">Sistema de Gestão Financeira</p>
         </div>
 
-        <div className="p-8 space-y-4">
-          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4">
-            <p className="text-sm text-blue-700 dark:text-blue-300 text-center">
-              🔐 Autenticação segura via Netlify Identity
-            </p>
-          </div>
-
+        <div className="space-y-4">
           <button
             onClick={() => NetlifyAuthManager.login()}
             className="w-full py-4 bg-gradient-to-r from-accent-500 to-accent-600 text-white font-bold rounded-xl hover:from-accent-600 hover:to-accent-700 transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
@@ -157,41 +171,51 @@ export default function AuthScreen() {
             <UserPlus className="w-5 h-5" />
             Criar Conta
           </button>
+        </div>
 
-          <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
-            <div className="flex items-start gap-2 text-xs text-gray-600 dark:text-gray-400">
-              <Shield className="w-4 h-4 text-accent-500 mt-0.5 flex-shrink-0" />
-              <p>
-                Seus dados são criptografados e armazenados com segurança no Netlify.
-                Suporte para login via email, Google, GitHub e mais.
-              </p>
-            </div>
-          </div>
+        <div className="mt-8 space-y-3 text-sm text-gray-600 dark:text-gray-400">
+          <p className="flex items-center gap-2">
+            <Shield className="w-4 h-4" />
+            🔐 Autenticação segura via Netlify Identity
+          </p>
+          <p>Seus dados são criptografados e armazenados com segurança no Netlify.</p>
+          <p>Suporte para login via email, Google, GitHub e mais.</p>
         </div>
       </motion.div>
     </div>
   )
 }
 
+// ============================================
+// 🪝 HOOK PERSONALIZADO useAuth
+// ============================================
 export function useAuth() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [user, setUser] = useState<NetlifyUser | null>(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const checkAuth = () => {
       const currentUser = NetlifyAuthManager.getCurrentUser()
       setIsAuthenticated(!!currentUser)
       setUser(currentUser)
+      setLoading(false)
     }
 
-    checkAuth()
+    // Inicializa o Netlify Identity
+    NetlifyAuthManager.init().then(() => {
+      checkAuth()
+    })
+
     const interval = setInterval(checkAuth, 1000)
     return () => clearInterval(interval)
   }, [])
 
   const logout = () => {
-    NetlifyAuthManager.logout()
+    if (window.confirm('Tem certeza que deseja sair?')) {
+      NetlifyAuthManager.logout()
+    }
   }
 
-  return { isAuthenticated, user, logout }
+  return { isAuthenticated, user, loading, logout }
 }

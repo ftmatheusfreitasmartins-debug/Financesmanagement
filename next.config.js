@@ -1,8 +1,8 @@
 /** @type {import('next').NextConfig} */
+
 const nextConfig = {
   reactStrictMode: true,
-  
-  // ✅ HEADERS DE SEGURANÇA
+
   async headers() {
     return [
       {
@@ -12,11 +12,12 @@ const nextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://identity.netlify.com",
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: blob: https:",
               "font-src 'self' data:",
-              "connect-src 'self'",
+              "connect-src 'self' https://*.netlify.app https://identity.netlify.com",
+              "frame-src 'self' https://identity.netlify.com",
               "frame-ancestors 'none'",
             ].join('; '),
           },
@@ -42,8 +43,8 @@ const nextConfig = {
           },
         ],
       },
-    ]
+    ];
   },
-}
+};
 
-module.exports = nextConfig
+module.exports = nextConfig;

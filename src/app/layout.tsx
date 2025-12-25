@@ -3,7 +3,7 @@ import './globals.css'
 import Script from 'next/script'
 
 export const metadata: Metadata = {
-  title: 'Finance Manager Pro - Gerencie suas Finanças',
+  title: 'Finance Manager - Gerencie suas Finanças',
   description: 'Sistema completo de gestão financeira pessoal com autenticação segura',
 }
 
