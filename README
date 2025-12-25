@@ -1,0 +1,376 @@
+# 💰 Finance Manager Pro
+
+Sistema completo de gestão financeira pessoal desenvolvido com Next.js 14, TypeScript, Tailwind CSS e Zustand.
+
+![Next.js](https://img.shields.io/badge/Next.js-14.2.35-black?logo=next.js)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.4.5-blue?logo=typescript)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4.3-38bdf8?logo=tailwind-css)
+![License](https://img.shields.io/badge/License-MIT-green)
+
+---
+
+## 🚀 Funcionalidades
+
+### ✨ Principais Features
+
+- 📊 **Dashboard Completo** - Visão geral de finanças em tempo real
+- 💸 **Transações** - Registro de receitas e despesas com categorização automática
+- 🔄 **Transações Recorrentes** - Automatize pagamentos mensais/semanais
+- 🎯 **Metas Financeiras** - Defina e acompanhe objetivos de economia
+- 📈 **Orçamentos** - Controle de gastos por categoria
+- 💰 **Dinheiro Guardado** - Sistema de poupança manual
+- 🌍 **Multi-moeda** - Suporte para BRL, USD e EUR
+- 🏷️ **Tags** - Organize transações com etiquetas personalizadas
+- 👥 **Divisão de Despesas** - Divida gastos entre pessoas
+- 📊 **Análises Avançadas** - Projeções, padrões de gastos e heatmaps
+- 🌙 **Dark Mode** - Tema claro e escuro
+- 🔔 **Notificações Inteligentes** - Alertas de orçamento e metas
+- 📁 **Export/Import** - Backup e restauração de dados
+
+---
+
+## 📁 Estrutura do Projeto
+
+
+finance-manager/
+│
+├── 📂 src/ # Código fonte principal
+│ ├── 📂 app/ # App Router do Next.js
+│ │ ├── favicon.ico # Ícone do site
+│ │ ├── globals.css # Estilos globais e Tailwind
+│ │ ├── layout.tsx # Layout raiz da aplicação
+│ │ └── page.tsx # Página principal (Dashboard)
+│ │
+│ ├── 📂 components/ # Componentes React reutilizáveis
+│ │ ├── AdvancedFilters.tsx # Filtros avançados de transações
+│ │ ├── BudgetTracker.tsx # Gerenciador de orçamentos
+│ │ ├── CurrencyConverter.tsx # Conversor de moedas
+│ │ ├── DarkModeToggle.tsx # Toggle tema claro/escuro
+│ │ ├── ExportImport.tsx # Exportar/importar dados
+│ │ ├── ExpenseChart.tsx # Gráfico de pizza (categorias)
+│ │ ├── FinancialProjection.tsx # Projeção financeira futura
+│ │ ├── GoalsManager.tsx # Gerenciador de metas
+│ │ ├── MonthlyChart.tsx # Gráfico de barras (mensal)
+│ │ ├── MonthlyComparison.tsx # Comparação mês a mês
+│ │ ├── Notifications.tsx # Centro de notificações
+│ │ ├── QuickSummary.tsx # Resumo rápido semanal
+│ │ ├── RecurringManager.tsx # Gerenciador de recorrência
+│ │ ├── SavingsTracker.tsx # Rastreador de economia
+│ │ ├── SmartAlerts.tsx # Alertas inteligentes
+│ │ ├── SpendingHeatmap.tsx # Mapa de calor de gastos
+│ │ ├── SpendingPatterns.tsx # Padrões de gastos por dia
+│ │ ├── SplitExpense.tsx # Calculadora de divisão
+│ │ ├── StatCard.tsx # Card de estatística
+│ │ ├── TagsManager.tsx # Gerenciador de tags
+│ │ ├── TransactionForm.tsx # Formulário de transação
+│ │ └── TransactionList.tsx # Lista de transações
+│ │
+│ ├── 📂 store/ # Estado global (Zustand)
+│ │ └── financeStore.ts # Store principal de finanças
+│ │
+│ ├── 📂 types/ # Definições TypeScript
+│ │ └── finance.ts # Tipos e interfaces
+│ │
+│ └── 📂 utils/ # Funções utilitárias
+│ └── autoCategory.ts # Categorização automática (IA)
+│
+├── 📂 public/ # Arquivos públicos estáticos
+│
+├── .nvmrc # Versão do Node.js para Netlify
+├── netlify.toml # Configuração do Netlify
+├── next.config.js # Configuração do Next.js
+├── tailwind.config.ts # Configuração do Tailwind CSS
+├── tsconfig.json # Configuração do TypeScript
+├── postcss.config.js # Configuração do PostCSS
+├── package.json # Dependências do projeto
+└── README.md  # Este arquivo
+
+---
+
+## 📄 Detalhamento dos Arquivos
+
+### 🔹 Raiz do Projeto
+
+| Arquivo | Descrição |
+|---------|-----------|
+| `.nvmrc` | Define Node.js v20 para builds consistentes |
+| `netlify.toml` | Configurações de deploy no Netlify |
+| `next.config.js` | Configurações do Next.js (standalone, SWC) |
+| `tailwind.config.ts` | Tema customizado e cores do Tailwind |
+| `tsconfig.json` | Configurações do TypeScript (paths, strict mode) |
+| `package.json` | Dependências e scripts npm |
+
+---
+
+### 🔹 src/app/
+
+| Arquivo | Descrição |
+|---------|-----------|
+| `page.tsx` | Página principal com Dashboard, tabs de navegação e todos os componentes |
+| `layout.tsx` | Layout raiz com providers e metadata |
+| `globals.css` | Reset CSS, variáveis Tailwind e classes customizadas |
+
+---
+
+### 🔹 src/components/
+
+#### 📊 **Visualização de Dados**
+
+| Componente | Descrição |
+|------------|-----------|
+| `StatCard.tsx` | Cards animados mostrando métricas (saldo, receitas, despesas) |
+| `ExpenseChart.tsx` | Gráfico de pizza (Chart.js) mostrando gastos por categoria |
+| `MonthlyChart.tsx` | Gráfico de barras comparando receitas vs despesas mensais |
+| `MonthlyComparison.tsx` | Comparação mês a mês com variações percentuais |
+| `SpendingHeatmap.tsx` | Mapa de calor de gastos por dia da semana |
+| `SpendingPatterns.tsx` | Análise de padrões de gastos por dia |
+| `FinancialProjection.tsx` | Projeção de saldo futuro (3-6 meses) |
+
+#### 💸 **Transações**
+
+| Componente | Descrição |
+|------------|-----------|
+| `TransactionForm.tsx` | Formulário modal de criar transação (FAB + modal centralizado) |
+| `TransactionList.tsx` | Lista paginada de transações com edição/exclusão |
+| `AdvancedFilters.tsx` | Filtros por data, categoria, valor e busca textual |
+
+#### 🔄 **Gestão Avançada**
+
+| Componente | Descrição |
+|------------|-----------|
+| `RecurringManager.tsx` | Gerenciamento de transações recorrentes (mensal/semanal) |
+| `GoalsManager.tsx` | Criação e progresso de metas financeiras |
+| `BudgetTracker.tsx` | Define limites de gastos por categoria |
+| `SavingsTracker.tsx` | Sistema manual de guardar dinheiro |
+| `TagsManager.tsx` | Gerencia tags e visualiza transações por tag |
+
+#### 🛠️ **Ferramentas**
+
+| Componente | Descrição |
+|------------|-----------|
+| `CurrencyConverter.tsx` | Converte valores entre BRL, USD e EUR |
+| `SplitExpense.tsx` | Calcula divisão de despesas entre pessoas |
+| `ExportImport.tsx` | Backup JSON dos dados locais |
+| `QuickSummary.tsx` | Resumo rápido da semana atual |
+| `SmartAlerts.tsx` | Alertas de saldo negativo e orçamento estourado |
+| `Notifications.tsx` | Centro de notificações com contador |
+| `DarkModeToggle.tsx` | Toggle entre tema claro e escuro |
+
+---
+
+### 🔹 src/store/
+
+| Arquivo | Descrição |
+|---------|-----------|
+| `financeStore.ts` | Estado global com Zustand (persistido no localStorage) |
+
+**Principais funções:**
+- `addTransaction`, `removeTransaction`, `updateTransaction`
+- `addRecurringTransaction`, `processRecurringTransactions`
+- `addGoal`, `updateGoalProgress`
+- `setBudget`, `getCategoryBudgetStatus`
+- `addSavedMoney`, `getTotalSaved`
+- `getBalance`, `getTotalIncome`, `getTotalExpenses`
+- `getFinancialProjection`, `getSpendingPatterns`
+- `exportData`, `importData`
+
+---
+
+### 🔹 src/types/
+
+| Arquivo | Descrição |
+|---------|-----------|
+| `finance.ts` | Todas as interfaces TypeScript do projeto |
+
+**Principais tipos:**
+- `Transaction` - Transação única
+- `RecurringTransaction` - Transação recorrente
+- `Goal` - Meta financeira
+- `Budget` - Orçamento por categoria
+- `SavedMoney` - Dinheiro guardado
+- `FinanceState` - Estado global completo
+
+---
+
+### 🔹 src/utils/
+
+| Arquivo | Descrição |
+|---------|-----------|
+| `autoCategory.ts` | Sugere categoria baseado na descrição (IA simplificada) |
+
+---
+
+## 🎨 Design System
+
+### Cores Principais
+
+
+Accent: #14b8a6 (Teal)
+Primary: #1e293b (Dark Blue)
+Success: #10b981 (Green)
+Warning: #f59e0b (Orange)
+Danger: #ef4444 (Red)
+
+### Componentes UI
+
+- **Cards**: `rounded-2xl shadow-lg border`
+- **Buttons**: `rounded-lg/xl hover:scale-105`
+- **Inputs**: `rounded-xl focus:ring-2 focus:ring-accent-400`
+- **Animações**: Framer Motion (`initial`, `animate`, `exit`)
+
+---
+
+## 🔧 Tecnologias Utilizadas
+
+### Core
+- **Next.js 14.2.35** - Framework React com App Router
+- **React 18.3.1** - Biblioteca UI
+- **TypeScript 5.4.5** - Tipagem estática
+
+### Estado e Dados
+- **Zustand 4.5.2** - Gerenciamento de estado global
+- **date-fns 3.6.0** - Manipulação de datas
+
+### UI e Animações
+- **Tailwind CSS 3.4.3** - Framework CSS utilitário
+- **Framer Motion 11.2.10** - Animações avançadas
+- **Lucide React 0.378.0** - Ícones SVG
+
+### Gráficos
+- **Chart.js 4.4.1** - Biblioteca de gráficos
+- **react-chartjs-2 5.2.0** - Wrapper React para Chart.js
+- **Recharts 2.12.7** - Gráficos declarativos
+
+---
+
+## 📦 Instalação e Uso
+
+### Pré-requisitos
+
+- Node.js 18+ ou 20+
+- npm 9+
+
+### Instalação
+
+
+Clone o repositório
+git clone https://github.com/seu-usuario/finance-manager.git
+Entre na pasta
+cd finance-manager
+Instale as dependências
+npm install
+Inicie o servidor de desenvolvimento
+npm run dev
+
+Acesse: [http://localhost:3000](http://localhost:3000)
+
+---
+
+## 🚀 Scripts Disponíveis
+
+
+npm run dev # Inicia servidor de desenvolvimento
+npm run build # Gera build de produção
+npm run start # Inicia servidor de produção
+npm run lint # Executa ESLint
+
+---
+
+## 🌐 Deploy
+
+### Netlify (Recomendado)
+
+1. Conecte seu repositório GitHub ao Netlify
+2. Configurações automáticas via `netlify.toml`
+3. Build e deploy automáticos a cada push
+
+### Vercel
+
+
+npm install -g vercel
+vercel --prod
+
+---
+
+## 💾 Armazenamento de Dados
+
+Todos os dados são salvos **localmente no navegador** usando `localStorage` via Zustand persist middleware.
+
+**Nenhum dado é enviado para servidores externos.**
+
+### Backup Manual
+
+1. Vá em **Gestão** → **Exportar/Importar**
+2. Clique em **Exportar Dados JSON**
+3. Salve o arquivo `.json` em local seguro
+
+---
+
+## 🔐 Privacidade e Segurança
+
+- ✅ **100% Local** - Dados nunca saem do seu dispositivo
+- ✅ **Sem Login** - Não requer cadastro ou autenticação
+- ✅ **Sem Cookies** - Não usa cookies de rastreamento
+- ✅ **Open Source** - Código totalmente aberto
+
+---
+
+## 🎯 Roadmap Futuro
+
+- [ ] PWA (Progressive Web App)
+- [ ] Sincronização em nuvem opcional
+- [ ] Relatórios em PDF
+- [ ] Integração com bancos (Open Banking)
+- [ ] Modo família (múltiplos usuários)
+- [ ] IA para sugestões de economia
+
+---
+
+## 🤝 Contribuindo
+
+Contribuições são bem-vindas!
+
+1. Fork o projeto
+2. Crie uma branch (`git checkout -b feature/nova-feature`)
+3. Commit suas mudanças (`git commit -m 'Adiciona nova feature'`)
+4. Push para a branch (`git push origin feature/nova-feature`)
+5. Abra um Pull Request
+
+---
+
+## 📝 Licença
+
+Este projeto está sob a licença MIT. Veja o arquivo `LICENSE` para mais detalhes.
+
+---
+
+## 👨‍💻 Autor
+
+Desenvolvido com ❤️ por **[Seu Nome]**
+
+- GitHub: [@seu-usuario](https://github.com/seu-usuario)
+- LinkedIn: [Seu Nome](https://linkedin.com/in/seu-perfil)
+
+---
+
+## 🙏 Agradecimentos
+
+- [Next.js](https://nextjs.org/)
+- [Tailwind CSS](https://tailwindcss.com/)
+- [Zustand](https://zustand-demo.pmnd.rs/)
+- [Framer Motion](https://www.framer.com/motion/)
+- [Chart.js](https://www.chartjs.org/)
+- [Lucide Icons](https://lucide.dev/)
+
+---
+
+## 📞 Suporte
+
+Encontrou um bug ou tem uma sugestão?
+
+1. Abra uma [Issue](https://github.com/seu-usuario/finance-manager/issues)
+2. Envie um email: seu-email@exemplo.com
+
+---
+
+**Finance Manager Pro** - *Controle suas finanças com inteligência* 💰✨

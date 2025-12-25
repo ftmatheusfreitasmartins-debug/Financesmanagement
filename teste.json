@@ -1,0 +1,741 @@
+{
+  "salary": 1600,
+  "transactions": [
+    {
+      "id": "tx-001",
+      "description": "Salário Dezembro",
+      "amount": 1600,
+      "category": "Outros",
+      "type": "income",
+      "date": "2025-12-05T12:00:00.000Z",
+      "currency": "BRL",
+      "exchangeRate": 1
+    },
+    {
+      "id": "tx-002",
+      "description": "Aluguel",
+      "amount": 650,
+      "category": "Moradia",
+      "type": "expense",
+      "date": "2025-12-10T12:00:00.000Z",
+      "currency": "BRL",
+      "exchangeRate": 1
+    },
+    {
+      "id": "tx-003",
+      "description": "Conta de Luz",
+      "amount": 85,
+      "category": "Contas",
+      "type": "expense",
+      "date": "2025-12-15T12:00:00.000Z",
+      "currency": "BRL",
+      "exchangeRate": 1
+    },
+    {
+      "id": "tx-004",
+      "description": "Internet",
+      "amount": 99.90,
+      "category": "Contas",
+      "type": "expense",
+      "date": "2025-12-15T12:00:00.000Z",
+      "currency": "BRL",
+      "exchangeRate": 1
+    },
+    {
+      "id": "tx-005",
+      "description": "Supermercado Extra",
+      "amount": 320,
+      "category": "Alimentação",
+      "type": "expense",
+      "date": "2025-12-08T12:00:00.000Z",
+      "currency": "BRL",
+      "exchangeRate": 1
+    },
+    {
+      "id": "tx-006",
+      "description": "iFood",
+      "amount": 45,
+      "category": "Alimentação",
+      "type": "expense",
+      "date": "2025-12-12T12:00:00.000Z",
+      "tags": ["delivery"],
+      "currency": "BRL",
+      "exchangeRate": 1
+    },
+    {
+      "id": "tx-007",
+      "description": "Uber",
+      "amount": 28,
+      "category": "Transporte",
+      "type": "expense",
+      "date": "2025-12-14T12:00:00.000Z",
+      "currency": "BRL",
+      "exchangeRate": 1
+    },
+    {
+      "id": "tx-008",
+      "description": "Cinema",
+      "amount": 60,
+      "category": "Lazer",
+      "type": "expense",
+      "date": "2025-12-20T12:00:00.000Z",
+      "tags": ["fim de semana"],
+      "currency": "BRL",
+      "exchangeRate": 1
+    },
+    {
+      "id": "tx-009",
+      "description": "Freela Design",
+      "amount": 350,
+      "category": "Outros",
+      "type": "income",
+      "date": "2025-12-18T12:00:00.000Z",
+      "tags": ["extra"],
+      "currency": "BRL",
+      "exchangeRate": 1
+    },
+    {
+      "id": "tx-010",
+      "description": "Farmácia",
+      "amount": 42,
+      "category": "Saúde",
+      "type": "expense",
+      "date": "2025-12-11T12:00:00.000Z",
+      "currency": "BRL",
+      "exchangeRate": 1
+    },
+    {
+      "id": "tx-011",
+      "description": "Salário Novembro",
+      "amount": 1600,
+      "category": "Outros",
+      "type": "income",
+      "date": "2025-11-05T12:00:00.000Z",
+      "currency": "BRL",
+      "exchangeRate": 1
+    },
+    {
+      "id": "tx-012",
+      "description": "Aluguel",
+      "amount": 650,
+      "category": "Moradia",
+      "type": "expense",
+      "date": "2025-11-10T12:00:00.000Z",
+      "currency": "BRL",
+      "exchangeRate": 1
+    },
+    {
+      "id": "tx-013",
+      "description": "Conta de Luz",
+      "amount": 78,
+      "category": "Contas",
+      "type": "expense",
+      "date": "2025-11-15T12:00:00.000Z",
+      "currency": "BRL",
+      "exchangeRate": 1
+    },
+    {
+      "id": "tx-014",
+      "description": "Internet",
+      "amount": 99.90,
+      "category": "Contas",
+      "type": "expense",
+      "date": "2025-11-15T12:00:00.000Z",
+      "currency": "BRL",
+      "exchangeRate": 1
+    },
+    {
+      "id": "tx-015",
+      "description": "Supermercado",
+      "amount": 280,
+      "category": "Alimentação",
+      "type": "expense",
+      "date": "2025-11-07T12:00:00.000Z",
+      "currency": "BRL",
+      "exchangeRate": 1
+    },
+    {
+      "id": "tx-016",
+      "description": "Restaurante",
+      "amount": 85,
+      "category": "Alimentação",
+      "type": "expense",
+      "date": "2025-11-16T12:00:00.000Z",
+      "tags": ["aniversário"],
+      "currency": "BRL",
+      "exchangeRate": 1
+    },
+    {
+      "id": "tx-017",
+      "description": "Uber",
+      "amount": 32,
+      "category": "Transporte",
+      "type": "expense",
+      "date": "2025-11-22T12:00:00.000Z",
+      "currency": "BRL",
+      "exchangeRate": 1
+    },
+    {
+      "id": "tx-018",
+      "description": "Spotify",
+      "amount": 21.90,
+      "category": "Lazer",
+      "type": "expense",
+      "date": "2025-11-10T12:00:00.000Z",
+      "tags": ["assinatura"],
+      "currency": "BRL",
+      "exchangeRate": 1
+    },
+    {
+      "id": "tx-019",
+      "description": "Curso Online",
+      "amount": 150,
+      "category": "Educação",
+      "type": "expense",
+      "date": "2025-11-20T12:00:00.000Z",
+      "tags": ["investimento"],
+      "currency": "BRL",
+      "exchangeRate": 1
+    },
+    {
+      "id": "tx-020",
+      "description": "Salário Outubro",
+      "amount": 1600,
+      "category": "Outros",
+      "type": "income",
+      "date": "2025-10-05T12:00:00.000Z",
+      "currency": "BRL",
+      "exchangeRate": 1
+    },
+    {
+      "id": "tx-021",
+      "description": "Aluguel",
+      "amount": 650,
+      "category": "Moradia",
+      "type": "expense",
+      "date": "2025-10-10T12:00:00.000Z",
+      "currency": "BRL",
+      "exchangeRate": 1
+    },
+    {
+      "id": "tx-022",
+      "description": "Conta de Luz",
+      "amount": 92,
+      "category": "Contas",
+      "type": "expense",
+      "date": "2025-10-15T12:00:00.000Z",
+      "currency": "BRL",
+      "exchangeRate": 1
+    },
+    {
+      "id": "tx-023",
+      "description": "Internet",
+      "amount": 99.90,
+      "category": "Contas",
+      "type": "expense",
+      "date": "2025-10-15T12:00:00.000Z",
+      "currency": "BRL",
+      "exchangeRate": 1
+    },
+    {
+      "id": "tx-024",
+      "description": "Supermercado",
+      "amount": 310,
+      "category": "Alimentação",
+      "type": "expense",
+      "date": "2025-10-09T12:00:00.000Z",
+      "currency": "BRL",
+      "exchangeRate": 1
+    },
+    {
+      "id": "tx-025",
+      "description": "Padaria",
+      "amount": 45,
+      "category": "Alimentação",
+      "type": "expense",
+      "date": "2025-10-12T12:00:00.000Z",
+      "currency": "BRL",
+      "exchangeRate": 1
+    },
+    {
+      "id": "tx-026",
+      "description": "Gasolina",
+      "amount": 150,
+      "category": "Transporte",
+      "type": "expense",
+      "date": "2025-10-18T12:00:00.000Z",
+      "currency": "BRL",
+      "exchangeRate": 1
+    },
+    {
+      "id": "tx-027",
+      "description": "Netflix",
+      "amount": 39.90,
+      "category": "Lazer",
+      "type": "expense",
+      "date": "2025-10-10T12:00:00.000Z",
+      "tags": ["assinatura"],
+      "currency": "BRL",
+      "exchangeRate": 1
+    },
+    {
+      "id": "tx-028",
+      "description": "Roupa Nova",
+      "amount": 120,
+      "category": "Vestuário",
+      "type": "expense",
+      "date": "2025-10-25T12:00:00.000Z",
+      "currency": "BRL",
+      "exchangeRate": 1
+    },
+    {
+      "id": "tx-029",
+      "description": "Freela Programação",
+      "amount": 500,
+      "category": "Outros",
+      "type": "income",
+      "date": "2025-10-28T12:00:00.000Z",
+      "tags": ["extra"],
+      "currency": "BRL",
+      "exchangeRate": 1
+    },
+    {
+      "id": "tx-030",
+      "description": "Salário Setembro",
+      "amount": 1600,
+      "category": "Outros",
+      "type": "income",
+      "date": "2025-09-05T12:00:00.000Z",
+      "currency": "BRL",
+      "exchangeRate": 1
+    },
+    {
+      "id": "tx-031",
+      "description": "Aluguel",
+      "amount": 650,
+      "category": "Moradia",
+      "type": "expense",
+      "date": "2025-09-10T12:00:00.000Z",
+      "currency": "BRL",
+      "exchangeRate": 1
+    },
+    {
+      "id": "tx-032",
+      "description": "Conta de Luz",
+      "amount": 88,
+      "category": "Contas",
+      "type": "expense",
+      "date": "2025-09-15T12:00:00.000Z",
+      "currency": "BRL",
+      "exchangeRate": 1
+    },
+    {
+      "id": "tx-033",
+      "description": "Internet",
+      "amount": 99.90,
+      "category": "Contas",
+      "type": "expense",
+      "date": "2025-09-15T12:00:00.000Z",
+      "currency": "BRL",
+      "exchangeRate": 1
+    },
+    {
+      "id": "tx-034",
+      "description": "Supermercado",
+      "amount": 295,
+      "category": "Alimentação",
+      "type": "expense",
+      "date": "2025-09-08T12:00:00.000Z",
+      "currency": "BRL",
+      "exchangeRate": 1
+    },
+    {
+      "id": "tx-035",
+      "description": "Pizzaria",
+      "amount": 70,
+      "category": "Alimentação",
+      "type": "expense",
+      "date": "2025-09-21T12:00:00.000Z",
+      "tags": ["fim de semana"],
+      "currency": "BRL",
+      "exchangeRate": 1
+    },
+    {
+      "id": "tx-036",
+      "description": "Uber",
+      "amount": 35,
+      "category": "Transporte",
+      "type": "expense",
+      "date": "2025-09-14T12:00:00.000Z",
+      "currency": "BRL",
+      "exchangeRate": 1
+    },
+    {
+      "id": "tx-037",
+      "description": "Academia",
+      "amount": 89.90,
+      "category": "Saúde",
+      "type": "expense",
+      "date": "2025-09-10T12:00:00.000Z",
+      "tags": ["mensal"],
+      "currency": "BRL",
+      "exchangeRate": 1
+    },
+    {
+      "id": "tx-038",
+      "description": "Livros",
+      "amount": 65,
+      "category": "Educação",
+      "type": "expense",
+      "date": "2025-09-25T12:00:00.000Z",
+      "currency": "BRL",
+      "exchangeRate": 1
+    },
+    {
+      "id": "tx-039",
+      "description": "Salário Agosto",
+      "amount": 1600,
+      "category": "Outros",
+      "type": "income",
+      "date": "2025-08-05T12:00:00.000Z",
+      "currency": "BRL",
+      "exchangeRate": 1
+    },
+    {
+      "id": "tx-040",
+      "description": "Aluguel",
+      "amount": 650,
+      "category": "Moradia",
+      "type": "expense",
+      "date": "2025-08-10T12:00:00.000Z",
+      "currency": "BRL",
+      "exchangeRate": 1
+    },
+    {
+      "id": "tx-041",
+      "description": "Conta de Luz",
+      "amount": 95,
+      "category": "Contas",
+      "type": "expense",
+      "date": "2025-08-15T12:00:00.000Z",
+      "currency": "BRL",
+      "exchangeRate": 1
+    },
+    {
+      "id": "tx-042",
+      "description": "Internet",
+      "amount": 99.90,
+      "category": "Contas",
+      "type": "expense",
+      "date": "2025-08-15T12:00:00.000Z",
+      "currency": "BRL",
+      "exchangeRate": 1
+    },
+    {
+      "id": "tx-043",
+      "description": "Supermercado",
+      "amount": 305,
+      "category": "Alimentação",
+      "type": "expense",
+      "date": "2025-08-07T12:00:00.000Z",
+      "currency": "BRL",
+      "exchangeRate": 1
+    },
+    {
+      "id": "tx-044",
+      "description": "Churrasco",
+      "amount": 90,
+      "category": "Alimentação",
+      "type": "expense",
+      "date": "2025-08-17T12:00:00.000Z",
+      "tags": ["social"],
+      "split": {
+        "total": 270,
+        "people": 3,
+        "sharedWith": ["João", "Maria"]
+      },
+      "currency": "BRL",
+      "exchangeRate": 1
+    },
+    {
+      "id": "tx-045",
+      "description": "Gasolina",
+      "amount": 160,
+      "category": "Transporte",
+      "type": "expense",
+      "date": "2025-08-20T12:00:00.000Z",
+      "currency": "BRL",
+      "exchangeRate": 1
+    },
+    {
+      "id": "tx-046",
+      "description": "Presente Aniversário",
+      "amount": 80,
+      "category": "Outros",
+      "type": "expense",
+      "date": "2025-08-22T12:00:00.000Z",
+      "tags": ["presente"],
+      "currency": "BRL",
+      "exchangeRate": 1
+    },
+    {
+      "id": "tx-047",
+      "description": "Consulta Médica",
+      "amount": 150,
+      "category": "Saúde",
+      "type": "expense",
+      "date": "2025-08-28T12:00:00.000Z",
+      "currency": "BRL",
+      "exchangeRate": 1
+    },
+    {
+      "id": "tx-048",
+      "description": "Salário Julho",
+      "amount": 1600,
+      "category": "Outros",
+      "type": "income",
+      "date": "2025-07-05T12:00:00.000Z",
+      "currency": "BRL",
+      "exchangeRate": 1
+    },
+    {
+      "id": "tx-049",
+      "description": "Aluguel",
+      "amount": 650,
+      "category": "Moradia",
+      "type": "expense",
+      "date": "2025-07-10T12:00:00.000Z",
+      "currency": "BRL",
+      "exchangeRate": 1
+    },
+    {
+      "id": "tx-050",
+      "description": "Conta de Luz",
+      "amount": 82,
+      "category": "Contas",
+      "type": "expense",
+      "date": "2025-07-15T12:00:00.000Z",
+      "currency": "BRL",
+      "exchangeRate": 1
+    },
+    {
+      "id": "tx-051",
+      "description": "Internet",
+      "amount": 99.90,
+      "category": "Contas",
+      "type": "expense",
+      "date": "2025-07-15T12:00:00.000Z",
+      "currency": "BRL",
+      "exchangeRate": 1
+    },
+    {
+      "id": "tx-052",
+      "description": "Supermercado",
+      "amount": 290,
+      "category": "Alimentação",
+      "type": "expense",
+      "date": "2025-07-08T12:00:00.000Z",
+      "currency": "BRL",
+      "exchangeRate": 1
+    },
+    {
+      "id": "tx-053",
+      "description": "iFood",
+      "amount": 55,
+      "category": "Alimentação",
+      "type": "expense",
+      "date": "2025-07-19T12:00:00.000Z",
+      "tags": ["delivery"],
+      "currency": "BRL",
+      "exchangeRate": 1
+    },
+    {
+      "id": "tx-054",
+      "description": "Uber",
+      "amount": 40,
+      "category": "Transporte",
+      "type": "expense",
+      "date": "2025-07-23T12:00:00.000Z",
+      "currency": "BRL",
+      "exchangeRate": 1
+    },
+    {
+      "id": "tx-055",
+      "description": "Cinema + Pipoca",
+      "amount": 75,
+      "category": "Lazer",
+      "type": "expense",
+      "date": "2025-07-27T12:00:00.000Z",
+      "tags": ["fim de semana"],
+      "currency": "BRL",
+      "exchangeRate": 1
+    },
+    {
+      "id": "tx-056",
+      "description": "Freela Consultoria",
+      "amount": 400,
+      "category": "Outros",
+      "type": "income",
+      "date": "2025-07-30T12:00:00.000Z",
+      "tags": ["extra"],
+      "currency": "BRL",
+      "exchangeRate": 1
+    }
+  ],
+  "recurringTransactions": [
+    {
+      "id": "rec-001",
+      "description": "Aluguel",
+      "amount": 650,
+      "category": "Moradia",
+      "type": "expense",
+      "frequency": "monthly",
+      "startDate": "2025-07-10T12:00:00.000Z",
+      "active": true,
+      "currency": "BRL"
+    },
+    {
+      "id": "rec-002",
+      "description": "Internet",
+      "amount": 99.90,
+      "category": "Contas",
+      "type": "expense",
+      "frequency": "monthly",
+      "startDate": "2025-07-15T12:00:00.000Z",
+      "active": true,
+      "currency": "BRL"
+    },
+    {
+      "id": "rec-003",
+      "description": "Netflix",
+      "amount": 39.90,
+      "category": "Lazer",
+      "type": "expense",
+      "frequency": "monthly",
+      "startDate": "2025-07-10T12:00:00.000Z",
+      "active": true,
+      "tags": ["assinatura"],
+      "currency": "BRL"
+    },
+    {
+      "id": "rec-004",
+      "description": "Spotify",
+      "amount": 21.90,
+      "category": "Lazer",
+      "type": "expense",
+      "frequency": "monthly",
+      "startDate": "2025-07-10T12:00:00.000Z",
+      "active": true,
+      "tags": ["assinatura"],
+      "currency": "BRL"
+    },
+    {
+      "id": "rec-005",
+      "description": "Academia",
+      "amount": 89.90,
+      "category": "Saúde",
+      "type": "expense",
+      "frequency": "monthly",
+      "startDate": "2025-09-10T12:00:00.000Z",
+      "active": true,
+      "currency": "BRL"
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-001",
+      "name": "Notebook Novo",
+      "targetAmount": 3500,
+      "currentAmount": 850,
+      "deadline": "2026-06-30T12:00:00.000Z",
+      "category": "Educação",
+      "color": "#3b82f6"
+    },
+    {
+      "id": "goal-002",
+      "name": "Viagem de Férias",
+      "targetAmount": 2000,
+      "currentAmount": 450,
+      "deadline": "2026-01-15T12:00:00.000Z",
+      "category": "Lazer",
+      "color": "#10b981"
+    },
+    {
+      "id": "goal-003",
+      "name": "Fundo de Emergência",
+      "targetAmount": 5000,
+      "currentAmount": 1200,
+      "deadline": "2026-12-31T12:00:00.000Z",
+      "category": "Investimentos",
+      "color": "#f59e0b"
+    }
+  ],
+  "budgets": [
+    {
+      "category": "Alimentação",
+      "limit": 400,
+      "spent": 0,
+      "period": "monthly"
+    },
+    {
+      "category": "Transporte",
+      "limit": 200,
+      "spent": 0,
+      "period": "monthly"
+    },
+    {
+      "category": "Lazer",
+      "limit": 150,
+      "spent": 0,
+      "period": "monthly"
+    },
+    {
+      "category": "Saúde",
+      "limit": 200,
+      "spent": 0,
+      "period": "monthly"
+    }
+  ],
+  "savedMoney": [
+    {
+      "id": "saved-001",
+      "amount": 200,
+      "description": "Reserva de Emergência",
+      "date": "2025-07-20T12:00:00.000Z",
+      "goal": "goal-003"
+    },
+    {
+      "id": "saved-002",
+      "amount": 300,
+      "description": "Guardando para Notebook",
+      "date": "2025-08-15T12:00:00.000Z",
+      "goal": "goal-001"
+    },
+    {
+      "id": "saved-003",
+      "amount": 150,
+      "description": "Viagem",
+      "date": "2025-09-10T12:00:00.000Z",
+      "goal": "goal-002"
+    },
+    {
+      "id": "saved-004",
+      "amount": 250,
+      "description": "Fundo de Emergência",
+      "date": "2025-10-05T12:00:00.000Z",
+      "goal": "goal-003"
+    },
+    {
+      "id": "saved-005",
+      "amount": 180,
+      "description": "Guardando extra do freela",
+      "date": "2025-11-12T12:00:00.000Z"
+    }
+  ],
+  "currencies": {
+    "BRL": 1,
+    "USD": 5.85,
+    "EUR": 6.15
+  },
+  "exportDate": "2025-12-22T07:12:00.000Z"
+}

@@ -1,0 +1,42 @@
+name: Deploy to Netlify
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 🔄 Checkout código
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: 🧹 Limpar cache
+        run: |
+          rm -rf .next
+          rm -rf node_modules
+          rm -rf out
+
+      - name: 📥 Instalar dependências
+        run: npm ci
+
+      - name: 🔨 Build do projeto
+        run: npm run build
+        env:
+          NEXT_PUBLIC_NETLIFY_IDENTITY_URL: ${{ secrets.NETLIFY_IDENTITY_URL }}
+
+      - name: 🚀 Deploy para Netlify
+        uses: netlify/actions/cli@master
+        with:
+          args: deploy --prod --dir=.next
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}

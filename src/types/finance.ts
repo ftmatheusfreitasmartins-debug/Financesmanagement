@@ -16,6 +16,7 @@ export interface Transaction {
   currency?: 'BRL' | 'USD' | 'EUR'
   exchangeRate?: number
   originalAmount?: number
+  receipt?: string // Base64 da imagem do comprovante
 }
 
 export interface RecurringTransaction {
@@ -99,6 +100,7 @@ export interface FinanceState {
   addRecurringTransaction: (transaction: Omit<RecurringTransaction, 'id' | 'active' | 'lastExecuted'>) => void
   removeRecurringTransaction: (id: string) => void
   toggleRecurringTransaction: (id: string) => void
+  updateRecurringTransaction: (id: string, updates: Partial<RecurringTransaction>) => void
   processRecurringTransactions: () => void
   
   // Goals
@@ -120,7 +122,9 @@ export interface FinanceState {
   updateCurrency: (currency: 'USD' | 'EUR', rate: number) => void
   
   // Computed
-  getBalance: () => number
+  getBalance: () => number // Saldo disponível (já descontado dinheiro guardado)
+  getAvailableBalance: () => number // Alias para getBalance
+  getTotalBalance: () => number // Saldo total (sem descontar dinheiro guardado)
   getTotalIncome: () => number
   getTotalExpenses: () => number
   getTransactionsByCategory: () => Record<string, number>
