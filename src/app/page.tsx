@@ -2,9 +2,18 @@
 
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Wallet, TrendingUp, TrendingDown, DollarSign, Settings, BarChart3, Calculator, Receipt, LogOut, User } from 'lucide-react'
+import {
+  Wallet,
+  TrendingUp,
+  TrendingDown,
+  DollarSign,
+  Settings,
+  BarChart3,
+  Zap,
+  Calculator,
+  Receipt,
+} from 'lucide-react'
 import { useFinanceStore } from '@/store/financeStore'
-import AuthScreen, { useAuth } from '@/components/AuthScreen'
 import StatCard from '@/components/StatCard'
 import TransactionForm from '@/components/TransactionForm'
 import TransactionList from '@/components/TransactionList'
@@ -17,6 +26,7 @@ import BudgetTracker from '@/components/BudgetTracker'
 import ExportImport from '@/components/ExportImport'
 import DarkModeToggle from '@/components/DarkModeToggle'
 import Notifications from '@/components/Notifications'
+import AdvancedFilters from '@/components/AdvancedFilters'
 import QuickSummary from '@/components/QuickSummary'
 import SmartAlerts from '@/components/SmartAlerts'
 import RecurringManager from '@/components/RecurringManager'
@@ -27,21 +37,28 @@ import TagsManager from '@/components/TagsManager'
 import SplitExpense from '@/components/SplitExpense'
 import CurrencyConverter from '@/components/CurrencyConverter'
 import SavingsTracker from '@/components/SavingsTracker'
+import { format } from 'date-fns'
 
 export default function Home() {
-  const { isAuthenticated, user, logout } = useAuth()
-  
   const [salaryInput, setSalaryInput] = useState('')
   const [showSalaryModal, setShowSalaryModal] = useState(false)
   const [currentView, setCurrentView] = useState<'overview' | 'transactions' | 'analytics' | 'management' | 'tools'>('overview')
+  const [filters, setFilters] = useState({
+    startDate: '',
+    endDate: '',
+    type: 'all' as 'all' | 'income' | 'expense',
+    category: 'all',
+    minAmount: '',
+    maxAmount: '',
+    searchTerm: '',
+  })
 
-  const salary = useFinanceStore(state => state.salary)
-  const setSalary = useFinanceStore(state => state.setSalary)
-  const getBalance = useFinanceStore(state => state.getBalance)
-  const getTotalIncome = useFinanceStore(state => state.getTotalIncome)
-  const getTotalExpenses = useFinanceStore(state => state.getTotalExpenses)
-  const processRecurringTransactions = useFinanceStore(state => state.processRecurringTransactions)
-
+  const salary = useFinanceStore((state) => state.salary)
+  const setSalary = useFinanceStore((state) => state.setSalary)
+  const getBalance = useFinanceStore((state) => state.getBalance)
+  const getTotalIncome = useFinanceStore((state) => state.getTotalIncome)
+  const getTotalExpenses = useFinanceStore((state) => state.getTotalExpenses)
+  
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
@@ -49,14 +66,13 @@ export default function Home() {
     if (salary === 0) {
       setShowSalaryModal(true)
     }
-    processRecurringTransactions()
-  }, [salary, processRecurringTransactions])
+  }, [salary])
 
   if (!mounted) return null
 
-  if (!isAuthenticated) {
-    return <AuthScreen />
-  }
+  const balance = getBalance()
+  const totalIncome = getTotalIncome()
+  const totalExpenses = getTotalExpenses()
 
   const handleSalarySubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -67,232 +83,400 @@ export default function Home() {
       setSalaryInput('')
     }
   }
-
-  const balance = getBalance()
-  const totalIncome = getTotalIncome()
-  const totalExpenses = getTotalExpenses()
-
-  const views = {
-    overview: {
-      icon: Wallet,
-      label: 'Visão Geral',
-      color: 'from-blue-500 to-blue-600'
-    },
-    transactions: {
-      icon: Receipt,
-      label: 'Transações',
-      color: 'from-purple-500 to-purple-600'
-    },
-    analytics: {
-      icon: BarChart3,
-      label: 'Análises',
-      color: 'from-green-500 to-green-600'
-    },
-    management: {
-      icon: Settings,
-      label: 'Gestão',
-      color: 'from-orange-500 to-orange-600'
-    },
-    tools: {
-      icon: Calculator,
-      label: 'Ferramentas',
-      color: 'from-pink-500 to-pink-600'
-    }
-  }
+// Componente auxiliar para os botões de navegação
+function TabButton({ 
+  active, 
+  onClick, 
+  icon, 
+  label 
+}: { 
+  active: boolean
+  onClick: () => void
+  icon: React.ReactNode
+  label: string
+}) {
+  return (
+    <motion.button
+      whileHover={{ scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
+      onClick={onClick}
+      className={`
+        flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg font-medium 
+        transition-all whitespace-nowrap text-xs sm:text-sm
+        ${active 
+          ? 'bg-gradient-to-r from-accent-500 to-accent-600 text-white shadow-lg shadow-accent-500/30' 
+          : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+        }
+      `}
+    >
+      {icon}
+      <span className="hidden sm:inline">{label}</span>
+    </motion.button>
+  )
+}
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
-      <header className="sticky top-0 z-30 bg-white/80 dark:bg-gray-900/80 backdrop-blur-lg border-b border-gray-200 dark:border-gray-700 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-gradient-to-br from-accent-400 to-accent-500 rounded-2xl shadow-lg">
-                <Wallet className="w-8 h-8 text-white" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                  Finance Manager Pro
-                </h1>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Sistema completo de gestão financeira
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-4">
-              <div className="hidden md:flex items-center gap-3 px-4 py-2 bg-gradient-to-r from-accent-50 to-accent-100 dark:from-accent-900/20 dark:to-accent-800/20 rounded-xl border border-accent-200 dark:border-accent-700">
-                <div className="p-2 bg-accent-500 rounded-lg">
-                  <User className="w-4 h-4 text-white" />
-                </div>
-                <div>
-                  <p className="text-xs text-gray-600 dark:text-gray-400">Bem-vindo(a)</p>
-                  <p className="text-sm font-semibold text-gray-900 dark:text-white">
-                    {user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Usuário'}
-                  </p>
-                </div>
-              </div>
-
-              <DarkModeToggle />
-              <Notifications />
-
-              <button
-                onClick={logout}
-                className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-all shadow-lg hover:shadow-red-500/50 font-semibold"
-              >
-                <LogOut className="w-4 h-4" />
-                <span className="hidden sm:inline">Sair</span>
-              </button>
-            </div>
-          </div>
-
-          <div className="flex gap-2 mt-4 overflow-x-auto pb-2 scrollbar-hide">
-            {(Object.keys(views) as Array<keyof typeof views>).map((view) => {
-              const ViewIcon = views[view].icon
-              return (
-                <button
-                  key={view}
-                  onClick={() => setCurrentView(view)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-xl font-semibold transition-all whitespace-nowrap ${
-                    currentView === view
-                      ? `bg-gradient-to-r ${views[view].color} text-white shadow-lg`
-                      : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
-                  }`}
-                >
-                  <ViewIcon className="w-5 h-5" />
-                  {views[view].label}
-                </button>
-              )
-            })}
-          </div>
+    <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-accent-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 transition-colors duration-300">
+{/* ===== HEADER MELHORADO E ORGANIZADO ===== */}
+<motion.header
+  initial={{ y: -100 }}
+  animate={{ y: 0 }}
+  transition={{ duration: 0.5 }}
+  className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-lg border-b border-gray-200 dark:border-gray-700 sticky top-0 z-30 shadow-sm"
+>
+  <div className="container mx-auto px-4 sm:px-6">
+    {/* Linha principal */}
+    <div className="flex items-center justify-between py-3 sm:py-4">
+      
+      {/* Logo e Título - Esquerda */}
+      <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+        <div className="flex-shrink-0 bg-gradient-to-br from-accent-400 to-accent-500 p-2 sm:p-2.5 rounded-xl shadow-lg">
+          <Wallet className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
         </div>
-      </header>
-
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {showSalaryModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+        <div className="min-w-0">
+          <h1 className="text-base sm:text-xl md:text-2xl font-bold text-gray-900 dark:text-white truncate">
+            Finance Manager
+          </h1>
+          <p className="hidden sm:block text-xs text-gray-500 dark:text-gray-400 truncate">
+            Controle financeiro inteligente
+          </p>
+        </div>
+      </div>
+      
+      {/* Área de Ações - Direita */}
+      <div className="flex items-center gap-2 sm:gap-2.5 flex-shrink-0">
+        
+        {/* Badge de Notificações */}
+        <Notifications />
+        
+        {/* Dark Mode Toggle */}
+        <DarkModeToggle />
+        
+        {/* Divider vertical (apenas desktop) */}
+        <div className="hidden sm:block w-px h-8 bg-gray-300 dark:bg-gray-600"></div>
+        
+        {/* Informações do Usuário (desktop) + Ações */}
+        <div className="flex items-center gap-2">
+          {/* Avatar + Nome (apenas desktop) */}
+          <div className="hidden md:flex items-center gap-2.5 px-3 py-1.5 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
+            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-md">
+              M
+            </div>
+            <div className="text-left">
+              <p className="text-xs font-semibold text-gray-900 dark:text-white leading-tight">
+                Matheus
+              </p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 leading-tight">
+                Desenvolvedor
+              </p>
+            </div>
+          </div>
+          
+          {/* Botão Salário */}
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setShowSalaryModal(true)}
+            className="flex items-center gap-1.5 sm:gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-2.5 sm:px-3.5 py-2 rounded-lg transition-all shadow-md hover:shadow-lg text-sm font-medium"
+            title="Configurar Salário"
           >
-            <motion.div
-              initial={{ scale: 0.9, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 max-w-md w-full"
-            >
-              <div className="text-center mb-6">
-                <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-accent-400 to-accent-500 rounded-full mb-4">
-                  <DollarSign className="w-8 h-8 text-white" />
-                </div>
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                  Configure seu Salário
-                </h2>
-                <p className="text-gray-600 dark:text-gray-400">
-                  Informe seu salário mensal para começar.
-                </p>
-              </div>
-
-              <form onSubmit={handleSalarySubmit} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                    Salário Mensal (R$)
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={salaryInput}
-                    onChange={(e) => setSalaryInput(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-accent-400 focus:border-transparent outline-none transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-lg font-semibold"
-                    placeholder="0,00"
-                    autoFocus
-                    required
-                  />
-                </div>
-
-                <div className="flex gap-3">
-                  {salary > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => setShowSalaryModal(false)}
-                      className="flex-1 py-3 px-4 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors font-semibold"
-                    >
-                      Cancelar
-                    </button>
-                  )}
-                  <button
-                    type="submit"
-                    className="flex-1 py-3 px-4 bg-gradient-to-r from-accent-500 to-accent-600 text-white rounded-xl hover:from-accent-600 hover:to-accent-700 transition-all shadow-lg hover:shadow-xl font-semibold"
-                  >
-                    Confirmar
-                  </button>
-                </div>
-              </form>
-            </motion.div>
-          </motion.div>
-        )}
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <StatCard title="Saldo Disponível" value={`R$ ${balance.toFixed(2)}`} icon={Wallet} color={balance >= 0 ? 'green' : 'red'} delay={0} />
-          <StatCard title="Receitas" value={`R$ ${totalIncome.toFixed(2)}`} icon={TrendingUp} color="blue" delay={0.1} />
-          <StatCard title="Despesas" value={`R$ ${totalExpenses.toFixed(2)}`} icon={TrendingDown} color="red" delay={0.2} />
-          <StatCard title="Salário" value={`R$ ${salary.toFixed(2)}`} icon={DollarSign} color="yellow" delay={0.3} />
+            <Settings className="w-4 h-4" />
+            <span className="hidden sm:inline">Salário</span>
+          </motion.button>
+          
+          {/* Botão Sair */}
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => {
+              if (confirm('Deseja realmente sair?')) {
+                window.location.reload()
+              }
+            }}
+            className="flex items-center gap-1.5 bg-red-500 hover:bg-red-600 text-white px-2.5 sm:px-3.5 py-2 rounded-lg transition-all shadow-md hover:shadow-lg text-sm font-medium"
+            title="Sair do sistema"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+            <span className="hidden sm:inline">Sair</span>
+          </motion.button>
         </div>
+      </div>
+    </div>
+    
+    {/* Navigation Tabs - Segunda linha */}
+    <div className="flex gap-1.5 sm:gap-2 overflow-x-auto pb-3 scrollbar-hide -mx-1 px-1">
+      <TabButton
+        active={currentView === 'overview'}
+        onClick={() => setCurrentView('overview')}
+        icon={<Wallet className="w-4 h-4" />}
+        label="Visão Geral"
+      />
+      
+      <TabButton
+        active={currentView === 'transactions'}
+        onClick={() => setCurrentView('transactions')}
+        icon={<Receipt className="w-4 h-4" />}
+        label="Transações"
+      />
+      
+      <TabButton
+        active={currentView === 'analytics'}
+        onClick={() => setCurrentView('analytics')}
+        icon={<BarChart3 className="w-4 h-4" />}
+        label="Análises"
+      />
+      
+      <TabButton
+        active={currentView === 'management'}
+        onClick={() => setCurrentView('management')}
+        icon={<Settings className="w-4 h-4" />}
+        label="Gestão"
+      />
+      
+      <TabButton
+        active={currentView === 'tools'}
+        onClick={() => setCurrentView('tools')}
+        icon={<Calculator className="w-4 h-4" />}
+        label="Ferramentas"
+      />
+    </div>
+  </div>
+</motion.header>
 
+
+      {/* Main Content */}
+      <main className="container mx-auto px-6 py-8">
+        {/* Smart Alerts */}
         <SmartAlerts />
 
-        <div className="space-y-8">
-          {currentView === 'overview' && (
-            <>
-              <QuickSummary />
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <ExpenseChart />
-                <MonthlyChart />
-              </div>
-              <TransactionList />
-            </>
-          )}
+        {/* Quick Summary */}
+        {currentView === 'overview' && <QuickSummary />}
 
-          {currentView === 'transactions' && (
-            <>
-              <TransactionList />
-              <RecurringManager />
-              <RecurringCalendar />
-            </>
-          )}
+        {/* VISÃO GERAL */}
+        {currentView === 'overview' && (
+          <>
+            {/* Dinheiro Guardado */}
+            <div className="mb-8">
+              <SavingsTracker />
+            </div>
 
-          {currentView === 'analytics' && (
-            <>
-              <FinancialProjection />
-              <MonthlyComparison />
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <SpendingHeatmap />
-                <SpendingPatterns />
-              </div>
+            {/* Stats Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+              <StatCard
+                title="Saldo Disponível"
+                value={`R$ ${balance.toFixed(2)}`}
+                icon={Wallet}
+                color="blue"
+                delay={0}
+              />
+              <StatCard
+                title="Receitas"
+                value={`R$ ${totalIncome.toFixed(2)}`}
+                icon={TrendingUp}
+                color="green"
+                delay={0.1}
+              />
+              <StatCard
+                title="Despesas"
+                value={`R$ ${totalExpenses.toFixed(2)}`}
+                icon={TrendingDown}
+                color="red"
+                delay={0.2}
+              />
+              <StatCard
+                title="Salário Mensal"
+                value={`R$ ${salary.toFixed(2)}`}
+                icon={DollarSign}
+                color="yellow"
+                delay={0.3}
+              />
+            </div>
+
+            {/* Monthly Trend */}
+            <div className="mb-8">
+              <MonthlyChart />
+            </div>
+
+            {/* Charts & Transactions */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
               <ExpenseChart />
-            </>
-          )}
+              <div>
+                <AdvancedFilters onFilterChange={setFilters} />
+                <TransactionList filters={filters} />
+              </div>
+            </div>
+          </>
+        )}
 
-          {currentView === 'management' && (
-            <>
+        {/* TRANSAÇÕES - NOVA ABA */}
+        {currentView === 'transactions' && (
+          <div>
+            <div className="mb-8">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+                <Receipt className="w-6 h-6 text-accent-500" />
+                Gerenciamento de Transações
+              </h2>
+            </div>
+
+            {/* Calendário de Próximos Pagamentos */}
+            <div className="mb-8">
+              <RecurringCalendar />
+            </div>
+
+            {/* Transações Recorrentes */}
+            <div className="mb-8">
+              <RecurringManager />
+            </div>
+
+            {/* Lista de Todas as Transações */}
+            <div>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+                Histórico Completo
+              </h3>
+              <AdvancedFilters onFilterChange={setFilters} />
+              <TransactionList filters={filters} />
+            </div>
+          </div>
+        )}
+
+        {/* ANÁLISES */}
+        {currentView === 'analytics' && (
+          <>
+            <div className="mb-8">
+              <FinancialProjection />
+            </div>
+
+            <div className="mb-8">
+              <MonthlyComparison />
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+              <SpendingPatterns />
+              <SpendingHeatmap />
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <ExpenseChart />
+              <MonthlyChart />
+            </div>
+          </>
+        )}
+
+        {/* GESTÃO */}
+        {currentView === 'management' && (
+          <>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
               <GoalsManager />
               <BudgetTracker />
-              <SavingsTracker />
-              <TagsManager />
-            </>
-          )}
+            </div>
 
-          {currentView === 'tools' && (
-            <>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <CurrencyConverter />
-                <SplitExpense />
-              </div>
-              <ExportImport />
-            </>
-          )}
-        </div>
+            <div className="mb-8">
+              <TagsManager />
+            </div>
+
+            <ExportImport />
+          </>
+        )}
+
+        {/* FERRAMENTAS */}
+        {currentView === 'tools' && (
+          <>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+              <CurrencyConverter />
+              <SplitExpense />
+            </div>
+
+            <div className="mb-8">
+              <FinancialProjection />
+            </div>
+
+            <div className="mb-8">
+              <SpendingPatterns />
+            </div>
+          </>
+        )}
       </main>
 
+      {/* Salary Modal */}
+      {showSalaryModal && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 flex items-center justify-center p-4"
+          onClick={() => salary > 0 && setShowSalaryModal(false)}
+        >
+          <motion.div
+            initial={{ scale: 0.9, y: 20 }}
+            animate={{ scale: 1, y: 0 }}
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 max-w-md w-full"
+          >
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+              {salary === 0 ? 'Bem-vindo!' : 'Atualizar Salário'}
+            </h2>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
+              {salary === 0
+                ? 'Para começar a usar o Finance Manager Pro, informe seu salário mensal.'
+                : 'Atualize seu salário mensal para recálculos automáticos.'}
+            </p>
+
+            <form onSubmit={handleSalarySubmit}>
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Salário Mensal (R$)
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={salaryInput}
+                  onChange={(e) => setSalaryInput(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-accent-400 focus:border-transparent outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  placeholder="0,00"
+                  required
+                  autoFocus
+                />
+              </div>
+
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                type="submit"
+                className="w-full bg-gradient-to-r from-accent-400 to-accent-500 text-white py-3 px-6 rounded-lg font-semibold shadow-lg hover:shadow-xl transition-shadow"
+              >
+                {salary === 0 ? 'Começar Agora' : 'Atualizar'}
+              </motion.button>
+            </form>
+          </motion.div>
+        </motion.div>
+      )}
+
+      {/* Transaction Form FAB */}
       <TransactionForm />
+
+      {/* Footer */}
+      <footer className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg border-t border-gray-200 dark:border-gray-700 mt-16">
+        <div className="container mx-auto px-6 py-6">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+            <p className="text-sm text-gray-600 dark:text-gray-400 text-center md:text-left">
+              © 2025 Finance Manager Pro. Todos os dados salvos localmente no seu navegador.
+            </p>
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              <span className="text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-3 py-1 rounded-full font-medium flex items-center gap-1">
+                🔒 100% Privado
+              </span>
+              <span className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-3 py-1 rounded-full font-medium flex items-center gap-1">
+                ⚡ Tempo Real
+              </span>
+              <span className="text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-3 py-1 rounded-full font-medium flex items-center gap-1">
+                <Zap className="w-3 h-3" />
+                Avançado
+              </span>
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
   )
 }
