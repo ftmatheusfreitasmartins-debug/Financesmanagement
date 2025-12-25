@@ -194,26 +194,31 @@ export const useFinanceStore = create<FinanceState>()(
           if (!recurring.active) return
 
           const lastExecuted = recurring.lastExecuted ? new Date(recurring.lastExecuted) : null
-          const startDate = new Date(recurring.startDate)
-          let nextDate = lastExecuted || startDate
 
-          switch (recurring.frequency) {
-            case 'daily':
-              nextDate = addDays(nextDate, 1)
-              break
-            case 'weekly':
-              nextDate = addWeeks(nextDate, 1)
-              break
-            case 'monthly':
-              nextDate = addMonths(nextDate, 1)
-              break
-            case 'yearly':
-              nextDate = addYears(nextDate, 1)
-              break
-          }
+      const startDate = new Date(recurring.startDate)
 
-          const shouldExecute =
-            isBefore(nextDate, now) || nextDate.toDateString() === now.toDateString()
+      let nextDate = lastExecuted ? new Date(lastExecuted) : new Date(startDate)
+
+      // ✅ só soma período se já executou pelo menos uma vez
+      if (lastExecuted) {
+        switch (recurring.frequency) {
+          case 'daily':
+            nextDate = addDays(nextDate, 1)
+            break
+          case 'weekly':
+            nextDate = addWeeks(nextDate, 1)
+            break
+          case 'monthly':
+            nextDate = addMonths(nextDate, 1)
+            break
+          case 'yearly':
+            nextDate = addYears(nextDate, 1)
+            break
+        }
+      }
+
+      const shouldExecute =
+        isBefore(nextDate, now) || nextDate.toDateString() === now.toDateString()
 
           if (shouldExecute && (!recurring.endDate || isBefore(now, new Date(recurring.endDate)))) {
             state.addTransaction({

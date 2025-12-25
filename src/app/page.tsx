@@ -70,7 +70,9 @@ export default function Home() {
 
   const [salaryInput, setSalaryInput] = useState('')
   const [showSalaryModal, setShowSalaryModal] = useState(false)
-  const [currentView, setCurrentView] = useState<'overview' | 'transactions' | 'analytics' | 'management' | 'tools'>('overview')
+  const [currentView, setCurrentView] = useState<
+    'overview' | 'transactions' | 'analytics' | 'management' | 'tools'
+  >('overview')
   const [filters, setFilters] = useState({
     startDate: '',
     endDate: '',
@@ -94,44 +96,56 @@ export default function Home() {
   useEffect(() => {
     setMounted(true)
 
-    // Função para atualizar dados do usuário
-    const updateUserData = () => {
-      if (typeof window !== 'undefined' && window.netlifyIdentity) {
-        const currentUser = window.netlifyIdentity.currentUser() as NetlifyUser | null
+    let interval: number | undefined
 
-        if (currentUser) {
-          const name = currentUser.user_metadata?.full_name || 
-                       currentUser.user_metadata?.name || 
-                       currentUser.email.split('@')[0]
-          setUserName(name)
+    const updateUserData = async () => {
+      if (typeof window === 'undefined' || !window.netlifyIdentity) return
 
-          const roles = currentUser.app_metadata?.roles || []
-          if (roles.length > 0) {
-            setUserRole(roles[0])
-          }
+      const current = window.netlifyIdentity.currentUser() as any
+      if (!current) return
+
+      // ✅ IMPORTANTE: força buscar metadata nova (nome) sem deslogar/logar
+      try {
+        if (typeof current.reload === 'function') {
+          await current.reload()
+        } else if (typeof current.jwt === 'function') {
+          await current.jwt(true)
         }
+      } catch {
+        // ignore
       }
+
+      const fresh = (window.netlifyIdentity.currentUser() as any) || current
+
+      const name =
+        fresh.user_metadata?.full_name ||
+        fresh.user_metadata?.name ||
+        (typeof fresh.email === 'string' ? fresh.email.split('@')[0] : '') ||
+        'Usuário'
+
+      setUserName(name)
+
+      const roles = fresh.app_metadata?.roles || []
+      setUserRole(roles.length > 0 ? roles[0] : 'Membro')
     }
 
-    // Atualizar dados inicialmente
-    updateUserData()
+    void updateUserData()
 
-    // Adicionar listener para mudanças no usuário
     if (typeof window !== 'undefined' && window.netlifyIdentity) {
-      window.netlifyIdentity.on('login', updateUserData)
-      window.netlifyIdentity.on('init', updateUserData)
+      window.netlifyIdentity.on('login', () => void updateUserData())
+      window.netlifyIdentity.on('init', () => void updateUserData())
 
-      // Verificar mudanças a cada 5 segundos
-      const interval = setInterval(updateUserData, 5000)
-
-      // Cleanup: remover listeners quando o componente desmontar
-      return () => {
-        clearInterval(interval)
-      }
+      interval = window.setInterval(() => {
+        void updateUserData()
+      }, 2000)
     }
 
     if (salary === 0 && isAuthenticated) {
       setShowSalaryModal(true)
+    }
+
+    return () => {
+      if (interval) window.clearInterval(interval)
     }
   }, [salary, isAuthenticated])
 
@@ -174,7 +188,6 @@ export default function Home() {
       >
         <div className="container mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between py-3 sm:py-4">
-
             <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
               <div className="flex-shrink-0 bg-gradient-to-br from-accent-400 to-accent-500 p-2 sm:p-2.5 rounded-xl shadow-lg">
                 <Wallet className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
@@ -228,7 +241,12 @@ export default function Home() {
                   title="Sair da conta"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                    />
                   </svg>
                   <span className="hidden sm:inline">Sair</span>
                 </motion.button>

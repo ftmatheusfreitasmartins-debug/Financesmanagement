@@ -46,38 +46,47 @@ export default function RecurringCalendar() {
   
   const getRecurrencesForDate = (date: Date) => {
     const recurrences: Array<any> = []
-    
-    recurringTransactions.forEach(recurring => {
+
+    recurringTransactions.forEach((recurring) => {
       if (!recurring.active) return
-      
+
+      // ✅ normaliza para não dar bug 00:00 vs 12:00
+      const day = new Date(date)
+      day.setHours(12, 0, 0, 0)
+
       const startDate = new Date(recurring.startDate)
+      startDate.setHours(12, 0, 0, 0)
+
       const endDate = recurring.endDate ? new Date(recurring.endDate) : addDays(new Date(), 365)
-      
-      if (date < startDate || date > endDate) return
-      
+      endDate.setHours(23, 59, 59, 999)
+
+      // ✅ intervalo inclusivo
+      if (day.getTime() < startDate.getTime() || day.getTime() > endDate.getTime()) return
+
       let shouldShow = false
-      
+
       switch (recurring.frequency) {
         case 'daily':
           shouldShow = true
           break
-        case 'weekly':
-          const weeksDiff = Math.floor((date.getTime() - startDate.getTime()) / (7 * 24 * 60 * 60 * 1000))
-          shouldShow = weeksDiff >= 0 && date.getDay() === startDate.getDay()
+        case 'weekly': {
+          const weeksDiff = Math.floor(
+            (day.getTime() - startDate.getTime()) / (7 * 24 * 60 * 60 * 1000),
+          )
+          shouldShow = weeksDiff >= 0 && day.getDay() === startDate.getDay()
           break
+        }
         case 'monthly':
-          shouldShow = date.getDate() === startDate.getDate()
+          shouldShow = day.getDate() === startDate.getDate()
           break
         case 'yearly':
-          shouldShow = date.getDate() === startDate.getDate() && date.getMonth() === startDate.getMonth()
+          shouldShow = day.getDate() === startDate.getDate() && day.getMonth() === startDate.getMonth()
           break
       }
-      
-      if (shouldShow) {
-        recurrences.push(recurring)
-      }
+
+      if (shouldShow) recurrences.push(recurring)
     })
-    
+
     return recurrences
   }
   

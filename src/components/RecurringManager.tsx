@@ -74,13 +74,23 @@ export default function RecurringManager() {
   }
   
   const calculateNextExecutions = (recurring: any, limit = 12) => {
-    const executions = []
+    const executions: Date[] = []
+
     const start = new Date(recurring.lastExecuted || recurring.startDate)
-    const end = recurring.endDate ? new Date(recurring.endDate) : addYears(start, 1)
-    
+
+    // Se tiver endDate, usa inclusivo (fim do dia)
+    const end = recurring.endDate
+      ? new Date(new Date(recurring.endDate).setHours(23, 59, 59, 999))
+      : addYears(new Date(start), 1)
+
     let currentDate = new Date(start)
-    
-    while (executions.length < limit && isBefore(currentDate, end)) {
+
+    // ✅ inclui a primeira ocorrência (start)
+    if (!isAfter(currentDate, end)) {
+      executions.push(new Date(currentDate))
+    }
+
+    while (executions.length < limit) {
       switch (recurring.frequency) {
         case 'daily':
           currentDate = addDays(currentDate, 1)
@@ -95,12 +105,15 @@ export default function RecurringManager() {
           currentDate = addYears(currentDate, 1)
           break
       }
-      
-      if (isBefore(currentDate, end)) {
+
+      // ✅ fim inclusivo
+      if (!isAfter(currentDate, end)) {
         executions.push(new Date(currentDate))
+      } else {
+        break
       }
     }
-    
+
     return executions
   }
   
