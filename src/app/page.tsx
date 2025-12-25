@@ -127,7 +127,7 @@ export default function Home() {
                 <div>
                   <p className="text-xs text-gray-600 dark:text-gray-400">Bem-vindo(a)</p>
                   <p className="text-sm font-semibold text-gray-900 dark:text-white">
-                    {user?.user_metadata?.full_name || user?.email || 'Usuário'}
+                    {user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Usuário'}
                   </p>
                 </div>
               </div>
