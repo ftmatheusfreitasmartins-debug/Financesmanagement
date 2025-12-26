@@ -122,8 +122,9 @@ export default function RecurringCalendar() {
   }
 
   const handleMarkAsPaid = (recurring: RecurringMinimal, date: Date) => {
+    const now = new Date()
     const d = startOfDay(date)
-    d.setHours(12, 0, 0, 0)
+  d.setHours(now.getHours(), now.getMinutes(), now.getSeconds(), 0)
 
     addTransaction({
       description: recurring.description,
