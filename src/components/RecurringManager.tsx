@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Repeat,
@@ -16,19 +16,11 @@ import {
 } from 'lucide-react'
 import { useFinanceStore } from '@/store/financeStore'
 import { CATEGORIES } from '@/types/finance'
-import {
-  format,
-  addDays,
-  addWeeks,
-  addMonths,
-  addYears,
-  isBefore,
-} from 'date-fns'
-import { ptBR } from 'date-fns/locale'
+import { format, addDays, addWeeks, addMonths, addYears, isBefore, isAfter } from 'date-fns'
 import { validateDate } from '@/utils/security'
 
-type RecurrenceFrequency = 'daily' | 'weekly' | 'monthly' | 'yearly'
-type RecurringType = 'income' | 'expense'
+type Frequency = 'daily' | 'weekly' | 'monthly' | 'yearly'
+type RecType = 'income' | 'expense'
 
 export default function RecurringManager() {
   const [showForm, setShowForm] = useState(false)
@@ -37,19 +29,18 @@ export default function RecurringManager() {
   const [description, setDescription] = useState('')
   const [amount, setAmount] = useState('')
   const [category, setCategory] = useState<string>(CATEGORIES[0])
-  const [type, setType] = useState<RecurringType>('expense')
-  const [frequency, setFrequency] = useState<RecurrenceFrequency>('monthly')
-  const [startDate, setStartDate] = useState<string>(
-    format(new Date(), 'yyyy-MM-dd'),
-  )
-  const [endDate, setEndDate] = useState<string>('')
+  const [type, setType] = useState<RecType>('expense')
+  const [frequency, setFrequency] = useState<Frequency>('monthly')
+  const [startDate, setStartDate] = useState(format(new Date(), 'yyyy-MM-dd'))
+  const [endDate, setEndDate] = useState<string>('') // <- controlado
+
   const [showCalendar, setShowCalendar] = useState<string | null>(null)
 
-  const recurringTransactions = useFinanceStore((state) => state.recurringTransactions)
-  const addRecurringTransaction = useFinanceStore((state) => state.addRecurringTransaction)
-  const removeRecurringTransaction = useFinanceStore((state) => state.removeRecurringTransaction)
-  const toggleRecurringTransaction = useFinanceStore((state) => state.toggleRecurringTransaction)
-  const updateRecurringTransaction = useFinanceStore((state) => state.updateRecurringTransaction)
+  const recurringTransactions = useFinanceStore((s) => s.recurringTransactions)
+  const addRecurringTransaction = useFinanceStore((s) => s.addRecurringTransaction)
+  const removeRecurringTransaction = useFinanceStore((s) => s.removeRecurringTransaction)
+  const toggleRecurringTransaction = useFinanceStore((s) => s.toggleRecurringTransaction)
+  const updateRecurringTransaction = useFinanceStore((s) => s.updateRecurringTransaction)
 
   function resetForm() {
     setDescription('')
@@ -61,44 +52,14 @@ export default function RecurringManager() {
     setEndDate('')
   }
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-
-    const parsedAmount = Number.parseFloat(amount)
-    if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) return
-
-    const data = {
-      description,
-      amount: parsedAmount,
-      category,
-      type,
-      frequency,
-      // meio-dia para reduzir bugs de timezone quando salva/serializa
-      startDate: validateDate(`${startDate}T12:00:00`),
-      endDate: endDate ? validateDate(`${endDate}T12:00:00`) : undefined,
-    }
-
-    if (editingId) {
-      updateRecurringTransaction(editingId, data)
-      setEditingId(null)
-    } else {
-      addRecurringTransaction(data as any)
-    }
-
-    resetForm()
-    setShowForm(false)
-  }
-
   function handleEdit(recurring: any) {
     setEditingId(recurring.id)
-    setDescription(String(recurring.description ?? ''))
+    setDescription(recurring.description ?? '')
     setAmount(String(recurring.amount ?? ''))
-    setCategory(String(recurring.category ?? CATEGORIES[0]))
+    setCategory(recurring.category ?? CATEGORIES[0])
     setType(recurring.type === 'income' ? 'income' : 'expense')
     setFrequency(
-      (['daily', 'weekly', 'monthly', 'yearly'].includes(recurring.frequency)
-        ? recurring.frequency
-        : 'monthly') as RecurrenceFrequency,
+      (['daily', 'weekly', 'monthly', 'yearly'].includes(recurring.frequency) ? recurring.frequency : 'monthly') as Frequency,
     )
 
     const start = validateDate(recurring.startDate)
@@ -114,33 +75,27 @@ export default function RecurringManager() {
     setShowForm(true)
   }
 
-  function calculateNextExecutions(recurring: any, limit = 12): Date[] {
+  function calculateNextExecutions(recurring: any, limit: number = 12): Date[] {
     const executions: Date[] = []
 
-    const startBase = recurring?.lastExecuted ?? recurring?.startDate
-    const start = validateDate(startBase)
-    const end = recurring?.endDate ? validateDate(recurring.endDate) : addYears(start, 1)
+    const start = recurring.lastExecuted ? validateDate(recurring.lastExecuted) : validateDate(recurring.startDate)
+    const end = recurring.endDate ? validateDate(recurring.endDate) : addYears(start, 1)
 
     let currentDate = new Date(start)
 
-    // trava de segurança contra loop infinito por dados estranhos
-    let guard = 0
-    while (executions.length < limit && isBefore(currentDate, end) && guard < 2000) {
-      guard++
-
-      switch (recurring?.frequency) {
+    while (executions.length < limit && isBefore(currentDate, end)) {
+      switch (recurring.frequency) {
         case 'daily':
           currentDate = addDays(currentDate, 1)
           break
         case 'weekly':
           currentDate = addWeeks(currentDate, 1)
           break
+        case 'monthly':
+          currentDate = addMonths(currentDate, 1)
+          break
         case 'yearly':
           currentDate = addYears(currentDate, 1)
-          break
-        case 'monthly':
-        default:
-          currentDate = addMonths(currentDate, 1)
           break
       }
 
@@ -150,29 +105,66 @@ export default function RecurringManager() {
     return executions
   }
 
-  function calculateTotalImpact() {
+  const impact = useMemo(() => {
     let totalExpenses = 0
     let totalIncome = 0
 
     recurringTransactions.forEach((recurring: any) => {
-      if (!recurring?.active) return
+      if (!recurring.active) return
       const executions = calculateNextExecutions(recurring, 12)
-      const total = executions.length * Number(recurring.amount ?? 0)
-
+      const total = executions.length * Number(recurring.amount || 0)
       if (recurring.type === 'expense') totalExpenses += total
       else totalIncome += total
     })
 
     return { totalExpenses, totalIncome, balance: totalIncome - totalExpenses }
-  }
+  }, [recurringTransactions])
 
-  const impact = calculateTotalImpact()
-
-  const frequencyLabels: Record<RecurrenceFrequency, string> = {
+  const frequencyLabels: Record<Frequency, string> = {
     daily: 'Diário',
     weekly: 'Semanal',
     monthly: 'Mensal',
     yearly: 'Anual',
+  }
+
+  function onSubmit(e: React.FormEvent) {
+    e.preventDefault()
+
+    const start = new Date(`${startDate}T12:00:00`)
+    const end = endDate ? new Date(`${endDate}T12:00:00`) : undefined
+
+    if (Number.isNaN(start.getTime())) {
+      alert('Data início inválida.')
+      return
+    }
+    if (end && Number.isNaN(end.getTime())) {
+      alert('Data fim inválida.')
+      return
+    }
+    if (end && isAfter(start, end)) {
+      alert('A data fim não pode ser menor que a data início.')
+      return
+    }
+
+    const data: any = {
+      description,
+      amount: parseFloat(amount),
+      category,
+      type,
+      frequency,
+      startDate: start,
+      endDate: end,
+    }
+
+    if (editingId) {
+      updateRecurringTransaction(editingId, data)
+      setEditingId(null)
+    } else {
+      addRecurringTransaction(data)
+    }
+
+    resetForm()
+    setShowForm(false)
   }
 
   return (
@@ -186,12 +178,8 @@ export default function RecurringManager() {
         <div className="flex items-center gap-3">
           <Repeat className="w-6 h-6 text-accent-400" />
           <div>
-            <h3 className="text-xl font-bold text-gray-900 dark:text-white">
-              Transações Recorrentes
-            </h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              Configure gastos e receitas automáticas
-            </p>
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white">Transações Recorrentes</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Configure gastos e receitas automáticas</p>
           </div>
         </div>
 
@@ -209,92 +197,56 @@ export default function RecurringManager() {
         </motion.button>
       </div>
 
-      {recurringTransactions.length > 0 && (
-        <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <TrendingDown className="w-4 h-4 text-red-600 dark:text-red-400" />
-              <p className="text-xs font-semibold text-red-600 dark:text-red-400 uppercase">
-                Despesas Futuras
-              </p>
-            </div>
-            <p className="text-2xl font-bold text-red-700 dark:text-red-300">
-              R$ {impact.totalExpenses.toFixed(2)}
-            </p>
-            <p className="text-xs text-red-600 dark:text-red-400 mt-1">
-              Próximos 12 meses
-            </p>
+      {/* Impacto */}
+      <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <TrendingDown className="w-4 h-4 text-red-600 dark:text-red-400" />
+            <p className="text-xs font-semibold text-red-600 dark:text-red-400 uppercase">Despesas Futuras</p>
           </div>
+          <p className="text-2xl font-bold text-red-700 dark:text-red-300">R$ {impact.totalExpenses.toFixed(2)}</p>
+          <p className="text-xs text-red-600 dark:text-red-400 mt-1">Próximos 12 meses</p>
+        </div>
 
-          <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <TrendingUp className="w-4 h-4 text-green-600 dark:text-green-400" />
-              <p className="text-xs font-semibold text-green-600 dark:text-green-400 uppercase">
-                Receitas Futuras
-              </p>
-            </div>
-            <p className="text-2xl font-bold text-green-700 dark:text-green-300">
-              R$ {impact.totalIncome.toFixed(2)}
-            </p>
-            <p className="text-xs text-green-600 dark:text-green-400 mt-1">
-              Próximos 12 meses
-            </p>
+        <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <TrendingUp className="w-4 h-4 text-green-600 dark:text-green-400" />
+            <p className="text-xs font-semibold text-green-600 dark:text-green-400 uppercase">Receitas Futuras</p>
           </div>
+          <p className="text-2xl font-bold text-green-700 dark:text-green-300">R$ {impact.totalIncome.toFixed(2)}</p>
+          <p className="text-xs text-green-600 dark:text-green-400 mt-1">Próximos 12 meses</p>
+        </div>
 
-          <div
-            className={`border rounded-xl p-4 ${
-              impact.balance >= 0
-                ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800'
-                : 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800'
+        <div
+          className={`border rounded-xl p-4 ${
+            impact.balance >= 0
+              ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800'
+              : 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800'
+          }`}
+        >
+          <div className="flex items-center gap-2 mb-2">
+            <Repeat className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+            <p className="text-xs font-semibold text-blue-600 dark:text-blue-400 uppercase">Impacto Total</p>
+          </div>
+          <p
+            className={`text-2xl font-bold ${
+              impact.balance >= 0 ? 'text-blue-700 dark:text-blue-300' : 'text-orange-700 dark:text-orange-300'
             }`}
           >
-            <div className="flex items-center gap-2 mb-2">
-              <Repeat
-                className={`w-4 h-4 ${
-                  impact.balance >= 0
-                    ? 'text-blue-600 dark:text-blue-400'
-                    : 'text-orange-600 dark:text-orange-400'
-                }`}
-              />
-              <p
-                className={`text-xs font-semibold uppercase ${
-                  impact.balance >= 0
-                    ? 'text-blue-600 dark:text-blue-400'
-                    : 'text-orange-600 dark:text-orange-400'
-                }`}
-              >
-                Impacto Total
-              </p>
-            </div>
-            <p
-              className={`text-2xl font-bold ${
-                impact.balance >= 0
-                  ? 'text-blue-700 dark:text-blue-300'
-                  : 'text-orange-700 dark:text-orange-300'
-              }`}
-            >
-              R$ {impact.balance.toFixed(2)}
-            </p>
-            <p
-              className={`text-xs mt-1 ${
-                impact.balance >= 0
-                  ? 'text-blue-600 dark:text-blue-400'
-                  : 'text-orange-600 dark:text-orange-400'
-              }`}
-            >
-              Balanço projetado
-            </p>
-          </div>
+            R$ {impact.balance.toFixed(2)}
+          </p>
+          <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">Balanço projetado</p>
         </div>
-      )}
+      </div>
 
+      {/* Form */}
       <AnimatePresence>
         {showForm && (
           <motion.form
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            onSubmit={handleSubmit}
+            onSubmit={onSubmit}
             className="mb-6 space-y-4 overflow-hidden"
           >
             <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4">
@@ -314,7 +266,6 @@ export default function RecurringManager() {
                 >
                   Despesa
                 </button>
-
                 <button
                   type="button"
                   onClick={() => setType('income')}
@@ -347,13 +298,12 @@ export default function RecurringManager() {
                   className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   required
                 />
-
                 <select
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
                   className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 >
-                  {CATEGORIES.map((cat) => (
+                                    {CATEGORIES.map((cat) => (
                     <option key={cat} value={cat}>
                       {cat}
                     </option>
@@ -364,7 +314,7 @@ export default function RecurringManager() {
               <div className="grid grid-cols-3 gap-4 mb-3">
                 <select
                   value={frequency}
-                  onChange={(e) => setFrequency(e.target.value as RecurrenceFrequency)}
+                  onChange={(e) => setFrequency(e.target.value as Frequency)}
                   className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 >
                   <option value="daily">Diário</option>
@@ -374,21 +324,21 @@ export default function RecurringManager() {
                 </select>
 
                 <div>
-                  <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">
-                    Data Início
-                  </label>
+                  <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Data Início</label>
                   <input
                     type="date"
                     value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
+                    onChange={(e) => {
+                      setStartDate(e.target.value)
+                      // se o usuário colocar início depois do fim, limpa fim pra evitar "fim bugado"
+                      if (endDate && e.target.value > endDate) setEndDate('')
+                    }}
                     className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">
-                    Data Fim (opcional)
-                  </label>
+                  <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Data Fim (opcional)</label>
                   <input
                     type="date"
                     value={endDate}
@@ -426,6 +376,7 @@ export default function RecurringManager() {
         )}
       </AnimatePresence>
 
+      {/* Lista */}
       <div className="space-y-3">
         {recurringTransactions.length === 0 ? (
           <p className="text-center text-gray-500 dark:text-gray-400 py-8">
@@ -436,9 +387,9 @@ export default function RecurringManager() {
             const nextExecutions = calculateNextExecutions(recurring, 6)
             const showingCalendar = showCalendar === recurring.id
 
-            const start = validateDate(recurring?.startDate)
-            const end = recurring?.endDate ? validateDate(recurring.endDate) : null
-            const last = recurring?.lastExecuted ? validateDate(recurring.lastExecuted) : null
+            const start = validateDate(recurring.startDate)
+            const end = recurring.endDate ? validateDate(recurring.endDate) : null
+            const last = recurring.lastExecuted ? validateDate(recurring.lastExecuted) : null
 
             return (
               <motion.div
@@ -470,24 +421,29 @@ export default function RecurringManager() {
                         </span>
                       </div>
 
-                      <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400 flex-wrap">
+                      <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400">
                         <span className="font-bold text-gray-900 dark:text-white">
-                          R$ {Number(recurring.amount ?? 0).toFixed(2)}
+                          R$ {Number(recurring.amount || 0).toFixed(2)}
                         </span>
                         <span>•</span>
                         <span>{recurring.category}</span>
                         <span>•</span>
-                        <span>{frequencyLabels[recurring.frequency as RecurrenceFrequency] ?? 'Mensal'}</span>
+                        <span>{frequencyLabels[recurring.frequency as Frequency] ?? 'Mensal'}</span>
                       </div>
 
-                      <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-500 mt-1 flex-wrap">
+                      <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-500 mt-1">
                         <span>Início: {format(start, 'dd/MM/yyyy')}</span>
-                        {end && <span>• Fim: {format(end, 'dd/MM/yyyy')}</span>}
+                        {end && (
+                          <>
+                            <span>•</span>
+                            <span>Fim: {format(end, 'dd/MM/yyyy')}</span>
+                          </>
+                        )}
                       </div>
 
                       {last && (
                         <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
-                          Última execução: {format(last, 'dd/MM/yyyy')}
+                          ✓ Última execução: {format(last, 'dd/MM/yyyy')}
                         </p>
                       )}
                     </div>
@@ -524,11 +480,7 @@ export default function RecurringManager() {
                         }`}
                         title={recurring.active ? 'Pausar' : 'Ativar'}
                       >
-                        {recurring.active ? (
-                          <Pause className="w-4 h-4" />
-                        ) : (
-                          <Play className="w-4 h-4" />
-                        )}
+                        {recurring.active ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
                       </motion.button>
 
                       <motion.button
@@ -544,8 +496,9 @@ export default function RecurringManager() {
                   </div>
                 </div>
 
+                {/* Calendário */}
                 <AnimatePresence>
-                  {showingCalendar && nextExecutions.length > 0 && (
+                  {showingCalendar && (
                     <motion.div
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}
@@ -557,33 +510,33 @@ export default function RecurringManager() {
                         Próximas {nextExecutions.length} Execuções
                       </h5>
 
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                        {nextExecutions.map((date, idx) => (
-                          <div
-                            key={idx}
-                            className="flex items-center gap-2 bg-white dark:bg-gray-700 rounded-lg px-3 py-2 text-sm"
-                          >
-                            <div
-                              className={`w-2 h-2 rounded-full ${
-                                recurring.type === 'income' ? 'bg-green-500' : 'bg-red-500'
-                              }`}
-                            />
-                            <span className="text-gray-900 dark:text-white font-medium">
-                              {format(date, 'dd/MM/yyyy')}
-                            </span>
-                            <span className="text-gray-500 dark:text-gray-400 text-xs">
-                              {format(date, 'EEE', { locale: ptBR })}
-                            </span>
+                      {nextExecutions.length === 0 ? (
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Nenhuma execução futura.</p>
+                      ) : (
+                        <>
+                          <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                            {nextExecutions.map((date, idx) => (
+                              <div
+                                key={idx}
+                                className="flex items-center gap-2 bg-white dark:bg-gray-700 rounded-lg px-3 py-2 text-sm"
+                              >
+                                <div
+                                  className={`w-2 h-2 rounded-full ${
+                                    recurring.type === 'income' ? 'bg-green-500' : 'bg-red-500'
+                                  }`}
+                                />
+                                <span className="text-gray-900 dark:text-white font-medium">
+                                  {format(date, 'dd/MM/yyyy')}
+                                </span>
+                              </div>
+                            ))}
                           </div>
-                        ))}
-                      </div>
 
-                      <p className="text-xs text-gray-600 dark:text-gray-400 mt-3">
-                        Total projetado:{' '}
-                        <strong>
-                          R$ {(nextExecutions.length * Number(recurring.amount ?? 0)).toFixed(2)}
-                        </strong>
-                      </p>
+                          <p className="text-xs text-gray-600 dark:text-gray-400 mt-3">
+                            Total projetado: <strong>R$ {(nextExecutions.length * Number(recurring.amount || 0)).toFixed(2)}</strong>
+                          </p>
+                        </>
+                      )}
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -596,11 +549,12 @@ export default function RecurringManager() {
       {recurringTransactions.length > 0 && (
         <div className="mt-6 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4">
           <p className="text-sm text-blue-900 dark:text-blue-300">
-            <strong>Dicas</strong>: As transações recorrentes são processadas automaticamente nas datas programadas. Use o botão de pausa para
-            desativar temporariamente e o calendário para ver as próximas execuções.
+            <strong>Dicas:</strong> As transações recorrentes são processadas automaticamente nas datas programadas.
+            Use o botão de pausa para desativar temporariamente e o calendário para ver as próximas execuções.
           </p>
         </div>
       )}
     </motion.div>
   )
 }
+
