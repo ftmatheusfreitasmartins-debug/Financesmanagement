@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "@netlify/blobs": "^10.5.0",
+    "@netlify/neon": "^0.1.0",
     "chart.js": "^4.4.1",
     "date-fns": "^3.6.0",
     "framer-motion": "^11.2.10",
@@ -28,6 +29,7 @@
     "zustand": "^4.5.2"
   },
   "devDependencies": {
+    "@netlify/functions": "^5.1.2",
     "@types/netlify-identity-widget": "^1.9.7",
     "@types/node": "^20.12.12",
     "@types/react": "^18.3.3",

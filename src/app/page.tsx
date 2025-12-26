@@ -17,6 +17,7 @@ import {
 import { useFinanceStore } from '@/store/financeStore'
 import { useAuth } from '@/components/AuthScreen'
 import AuthScreen from '@/components/AuthScreen'
+import CloudSync from "@/components/CloudSync";
 import StatCard from '@/components/StatCard'
 import TransactionForm from '@/components/TransactionForm'
 import TransactionList from '@/components/TransactionList'
@@ -253,7 +254,9 @@ export default function Home() {
               </div>
             </div>
           </div>
-
+<>
+  <CloudSync />
+</>
           <div className="flex gap-1.5 sm:gap-2 overflow-x-auto pb-3 scrollbar-hide -mx-1 px-1">
             <motion.button
               whileHover={{ scale: 1.02 }}

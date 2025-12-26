@@ -11,9 +11,3 @@
 # Habilita Netlify Identity
 [build.environment]
   NEXT_PUBLIC_NETLIFY_IDENTITY_URL = "/.netlify/identity"
-
-# Configuração de redirecionamento
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
