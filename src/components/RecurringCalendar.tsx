@@ -30,6 +30,8 @@ import {
   addMonths,
   subMonths,
   isSameDay,
+  startOfDay,
+  endOfDay,
 } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { CATEGORIES } from '@/types/finance'
@@ -68,7 +70,6 @@ export default function RecurringCalendar() {
   const transactions = useFinanceStore((state) => state.transactions) as any[]
   const addTransaction = useFinanceStore((state) => state.addTransaction)
 
-  // Verifica se um pagamento recorrente já foi pago em uma data específica
   const isPaymentPaid = (recurringId: string, date: Date) => {
     return transactions.some(
       (t) => t.recurringId === recurringId && isSameDay(validateDate(t.date), date),
@@ -76,18 +77,18 @@ export default function RecurringCalendar() {
   }
 
   const getRecurrencesForDate = (date: Date) => {
+    const day = startOfDay(date)
     const recurrences: RecurringMinimal[] = []
 
     recurringTransactions.forEach((recurring: any) => {
       if (!recurring?.active) return
 
-      const startDate = validateDate(recurring.startDate)
+      const startDate = startOfDay(validateDate(recurring.startDate))
+      const endDate = recurring.endDate
+        ? endOfDay(validateDate(recurring.endDate))
+        : endOfDay(addDays(new Date(), 365))
 
-      // Se endDate for inválido ou ficar antes do startDate, trata como "sem fim"
-      const rawEnd = recurring.endDate ? validateDate(recurring.endDate) : addDays(new Date(), 365)
-      const endDate = rawEnd.getTime() < startDate.getTime() ? addDays(new Date(), 365) : rawEnd
-
-      if (date < startDate || date > endDate) return
+      if (day < startDate || day > endDate) return
 
       let shouldShow = false
 
@@ -98,19 +99,19 @@ export default function RecurringCalendar() {
 
         case 'weekly': {
           const weeksDiff = Math.floor(
-            (date.getTime() - startDate.getTime()) / (7 * 24 * 60 * 60 * 1000),
+            (day.getTime() - startDate.getTime()) / (7 * 24 * 60 * 60 * 1000),
           )
-          shouldShow = weeksDiff >= 0 && date.getDay() === startDate.getDay()
+          shouldShow = weeksDiff >= 0 && day.getDay() === startDate.getDay()
           break
         }
 
         case 'monthly':
-          shouldShow = date.getDate() === startDate.getDate()
+          shouldShow = day.getDate() === startDate.getDate()
           break
 
         case 'yearly':
           shouldShow =
-            date.getDate() === startDate.getDate() && date.getMonth() === startDate.getMonth()
+            day.getDate() === startDate.getDate() && day.getMonth() === startDate.getMonth()
           break
       }
 
@@ -121,7 +122,7 @@ export default function RecurringCalendar() {
   }
 
   const handleMarkAsPaid = (recurring: RecurringMinimal, date: Date) => {
-    const d = new Date(date)
+    const d = startOfDay(date)
     d.setHours(12, 0, 0, 0)
 
     addTransaction({
@@ -138,12 +139,11 @@ export default function RecurringCalendar() {
     setSelectedPayment(null)
   }
 
-  // Próximos 30 dias
   const upcomingPayments = useMemo(() => {
     const payments: { date: Date; recurring: any }[] = []
 
     for (let i = 0; i < 30; i++) {
-      const date = addDays(new Date(), i)
+      const date = startOfDay(addDays(new Date(), i))
       const recurrences = getRecurrencesForDate(date)
 
       recurrences.forEach((recurring) => {
@@ -156,7 +156,6 @@ export default function RecurringCalendar() {
     return payments
   }, [recurringTransactions, filterType, filterCategory, transactions])
 
-  // Pagamentos do mês selecionado
   const monthlyPayments = useMemo(() => {
     const payments: { date: Date; recurring: any }[] = []
 
@@ -165,11 +164,11 @@ export default function RecurringCalendar() {
     const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd })
 
     daysInMonth.forEach((date) => {
-      const recurrences = getRecurrencesForDate(date)
+      const recurrences = getRecurrencesForDate(startOfDay(date))
       recurrences.forEach((recurring) => {
         if (filterType !== 'all' && recurring.type !== filterType) return
         if (filterCategory !== 'all' && recurring.category !== filterCategory) return
-        payments.push({ date, recurring })
+        payments.push({ date: startOfDay(date), recurring })
       })
     })
 
