@@ -11,3 +11,8 @@
 # Habilita Netlify Identity
 [build.environment]
   NEXT_PUBLIC_NETLIFY_IDENTITY_URL = "/.netlify/identity"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Content-Security-Policy = "connect-src 'self' https://*.netlify.app https://identity.netlify.com https://api.frankfurter.dev;"
