@@ -339,6 +339,38 @@ export const useFinanceStore = create<FinanceState>()(
           currencies: { ...state.currencies, [currency]: validateNumber(rate, 0.01, 1000) },
         })),
 
+      refreshCurrencyRates: async () => {
+        // 1 request por 10 minutos (por aba)
+        if (!rateLimiter.check('refreshCurrencyRates', 1, 10 * 60 * 1000)) return
+
+        try {
+          const res = await fetch(
+            'https://api.frankfurter.dev/v1/latest?base=EUR&symbols=BRL,USD',
+            { cache: 'no-store' },
+          )
+          if (!res.ok) return
+
+          const data = await res.json()
+
+          const eurToBrl = validateNumber(data?.rates?.BRL, 0.01, 1000) // BRL por 1 EUR
+          const eurToUsd = validateNumber(data?.rates?.USD, 0.000001, 1000) // USD por 1 EUR
+
+          // BRL por 1 USD = (BRL/EUR) / (USD/EUR)
+          const usdToBrl = validateNumber(eurToBrl / eurToUsd, 0.01, 1000)
+
+          set((state) => ({
+            currencies: {
+              ...state.currencies,
+              BRL: 1,
+              USD: usdToBrl,
+              EUR: eurToBrl,
+            },
+          }))
+        } catch {
+          // silencioso: mantém a última taxa conhecida
+        }
+      },
+
       getBalance: () => {
         const state = get()
         const totalIncome = state.transactions

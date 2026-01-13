@@ -379,3 +379,9 @@ Encontrou um bug ou tem uma sugestão?
 ---
 
 **Finance Manager Pro** - *Controle suas finanças com inteligência* 💰✨
+
+
+git status
+git add -A
+git commit -m "deploy: update"
+git push origin main

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { DollarSign, TrendingUp, RefreshCw } from 'lucide-react'
 import { useFinanceStore } from '@/store/financeStore'
@@ -13,7 +13,7 @@ export default function CurrencyConverter() {
   
   const currencies = useFinanceStore(state => state.currencies)
   const convertCurrency = useFinanceStore(state => state.convertCurrency)
-  const updateCurrency = useFinanceStore(state => state.updateCurrency)
+  const refreshCurrencyRates = useFinanceStore(state => state.refreshCurrencyRates)
   
   const convertedAmount = amount 
     ? convertCurrency(parseFloat(amount), fromCurrency, toCurrency)
@@ -25,15 +25,9 @@ export default function CurrencyConverter() {
     { code: 'EUR', name: 'Euro', flag: '🇪🇺' },
   ]
   
-  // Simular atualização de taxa (em produção, chamar API real)
+  // Atualizar taxas (API real)
   const updateRates = async () => {
-    // Aqui você chamaria uma API real como https://api.exchangerate-api.com
-    // Por enquanto, apenas valores de exemplo
-    const newUSD = 5.85 + (Math.random() - 0.5) * 0.2
-    const newEUR = 6.15 + (Math.random() - 0.5) * 0.2
-    
-    updateCurrency('USD', newUSD)
-    updateCurrency('EUR', newEUR)
+    await refreshCurrencyRates()
   }
   
   return (

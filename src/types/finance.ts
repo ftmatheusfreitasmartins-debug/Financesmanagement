@@ -61,22 +61,10 @@ export interface SavedMoney {
 
 export interface FinancialProjection {
   month: string
-  projectedBalance: number // use como p50 (mediana)
-  projectedIncome: number  // valor esperado (médio)
-  projectedExpenses: number // valor esperado (médio)
-  confidence: number // 0-100
-  p10Balance?: number
-  p90Balance?: number
-  probNegative?: number
-  drivers?: {
-    salary: number
-    recurringIncome: number
-    recurringExpenses: number
-    inferredRecurringIncome: number
-    inferredRecurringExpenses: number
-    variableIncomeExpected: number
-    variableExpensesExpected: number
-  }
+  projectedBalance: number
+  projectedIncome: number
+  projectedExpenses: number
+  confidence: number
 }
 
 export interface SpendingPattern {
@@ -132,7 +120,9 @@ export interface FinanceState {
   // Settings
   toggleDarkMode: () => void
   updateCurrency: (currency: 'USD' | 'EUR', rate: number) => void
-  
+
+  refreshCurrencyRates: () => Promise<void>
+
   // Computed
   getBalance: () => number // Saldo disponível (já descontado dinheiro guardado)
   getAvailableBalance: () => number // Alias para getBalance

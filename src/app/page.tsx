@@ -88,6 +88,7 @@ export default function Home() {
   const getBalance = useFinanceStore((state) => state.getBalance)
   const getTotalIncome = useFinanceStore((state) => state.getTotalIncome)
   const getTotalExpenses = useFinanceStore((state) => state.getTotalExpenses)
+  const refreshCurrencyRates = useFinanceStore((state) => state.refreshCurrencyRates)
 
   const [mounted, setMounted] = useState(false)
   const [userName, setUserName] = useState('Usuário')
@@ -148,6 +149,33 @@ export default function Home() {
       if (interval) window.clearInterval(interval)
     }
   }, [salary, isAuthenticated])
+
+
+  // Atualização automática de câmbio (global)
+  useEffect(() => {
+    const run = () => {
+      // evita request em background
+      if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return
+      refreshCurrencyRates()
+    }
+
+    run()
+
+    // 10 min + jitter pra evitar bater exatamente no mesmo segundo
+    const jitter = Math.floor(Math.random() * 15_000)
+    const id = window.setInterval(run, 10 * 60 * 1000 + jitter)
+
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') run()
+    }
+
+    document.addEventListener('visibilitychange', onVisibility)
+
+    return () => {
+      window.clearInterval(id)
+      document.removeEventListener('visibilitychange', onVisibility)
+    }
+  }, [refreshCurrencyRates])
 
   if (!mounted || authLoading) {
     return (
@@ -414,7 +442,6 @@ export default function Home() {
 
         {currentView === 'analytics' && (
           <>
-
             <div className="mb-8">
               <MonthlyComparison />
             </div>
@@ -452,7 +479,7 @@ export default function Home() {
               <CurrencyConverter />
               <SplitExpense />
             </div>
-            
+
             <div className="mb-8">
               <SpendingPatterns />
             </div>
