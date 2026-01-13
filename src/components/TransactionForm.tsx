@@ -1,13 +1,22 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, X, Sparkles, Tag, Users, Globe, Calendar as CalendarIcon, Image, Upload, Trash2 } from 'lucide-react'
+import { Plus, X, Upload, Trash2, Calendar as CalendarIcon, Tag, Users } from 'lucide-react'
+
 import { useFinanceStore } from '@/store/financeStore'
 import { CATEGORIES, type Category } from '@/types/finance'
 import { suggestCategory } from '@/utils/autoCategory'
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday, isSameDay } from 'date-fns'
-import { ptBR } from 'date-fns/locale'
+import {
+  sanitizeString,
+  validateNumber,
+  validateTags,
+  validateImageMIME,
+  validateImageSize,
+  validateCurrency,
+} from '@/utils/security'
+
+type TxType = 'income' | 'expense'
 
 interface TransactionFormProps {
   editingTransaction?: {
@@ -15,7 +24,7 @@ interface TransactionFormProps {
     description: string
     amount: number
     category: string
-    type: 'income' | 'expense'
+    type: TxType
     date: Date
     tags?: string[]
     currency?: 'BRL' | 'USD' | 'EUR'
@@ -27,88 +36,121 @@ interface TransactionFormProps {
 
 export default function TransactionForm({ editingTransaction, onClose }: TransactionFormProps = {}) {
   const [isOpen, setIsOpen] = useState(false)
+
+  const [type, setType] = useState<TxType>('expense')
   const [description, setDescription] = useState('')
   const [amount, setAmount] = useState('')
   const [category, setCategory] = useState<Category>(CATEGORIES[0])
-  const [type, setType] = useState<'income' | 'expense'>('expense')
-  const [date, setDate] = useState(new Date())
-  const [showCalendar, setShowCalendar] = useState(false)
+  const [date, setDate] = useState(() => new Date())
+
   const [autoSuggested, setAutoSuggested] = useState(false)
 
-  // Advanced features
   const [tags, setTags] = useState<string[]>([])
   const [tagInput, setTagInput] = useState('')
+
+  const [currency, setCurrency] = useState<'BRL' | 'USD' | 'EUR'>('BRL')
+
   const [isSplit, setIsSplit] = useState(false)
   const [splitPeople, setSplitPeople] = useState('2')
   const [splitWith, setSplitWith] = useState('')
-  const [currency, setCurrency] = useState<'BRL' | 'USD' | 'EUR'>('BRL')
+
   const [receipt, setReceipt] = useState('')
   const [receiptPreview, setReceiptPreview] = useState('')
 
-  const addTransaction = useFinanceStore(state => state.addTransaction)
-  const updateTransaction = useFinanceStore(state => state.updateTransaction)
-  const currencies = useFinanceStore(state => state.currencies)
+  const addTransaction = useFinanceStore((s) => s.addTransaction)
+  const updateTransaction = useFinanceStore((s) => s.updateTransaction)
+  const currencies = useFinanceStore((s) => s.currencies)
 
-  // Modo edição
+  // Edit mode
   useEffect(() => {
-    if (editingTransaction) {
-      setDescription(editingTransaction.description)
-      setAmount(editingTransaction.amount.toString())
-      setCategory(editingTransaction.category as Category)
-      setType(editingTransaction.type)
-      setDate(new Date(editingTransaction.date))
-      setTags(editingTransaction.tags || [])
-      setCurrency(editingTransaction.currency || 'BRL')
-      setReceipt(editingTransaction.receipt || '')
-      setReceiptPreview(editingTransaction.receipt || '')
-      if (editingTransaction.split) {
-        setIsSplit(true)
-        setSplitPeople(editingTransaction.split.people.toString())
-        setSplitWith(editingTransaction.split.sharedWith.join(', '))
-      }
-      setIsOpen(true)
+    if (!editingTransaction) return
+
+    setType(editingTransaction.type)
+    setDescription(editingTransaction.description ?? '')
+    setAmount(String(editingTransaction.amount ?? ''))
+    setCategory((editingTransaction.category as Category) ?? CATEGORIES[0])
+    setDate(new Date(editingTransaction.date))
+    setTags(editingTransaction.tags ?? [])
+    setCurrency(editingTransaction.currency ?? 'BRL')
+    setReceipt(editingTransaction.receipt ?? '')
+    setReceiptPreview(editingTransaction.receipt ?? '')
+
+    if (editingTransaction.split) {
+      setIsSplit(true)
+      setSplitPeople(String(editingTransaction.split.people ?? 2))
+      setSplitWith((editingTransaction.split.sharedWith ?? []).join(', '))
+    } else {
+      setIsSplit(false)
+      setSplitPeople('2')
+      setSplitWith('')
     }
+
+    setIsOpen(true)
   }, [editingTransaction])
 
   // Auto-sugestão de categoria
   useEffect(() => {
-    if (description.length > 3 && !editingTransaction) {
-      const suggested = suggestCategory(description)
-      if (suggested !== 'Outros') {
-        setCategory(suggested as Category)
-        setAutoSuggested(true)
-        setTimeout(() => setAutoSuggested(false), 2000)
-      }
+    if (editingTransaction) return
+    const clean = sanitizeString(description, 200)
+    if (clean.length <= 3) return
+
+    const suggested = suggestCategory(clean)
+    if (suggested && suggested !== 'Outros') {
+      setCategory(suggested as Category)
+      setAutoSuggested(true)
+      const t = setTimeout(() => setAutoSuggested(false), 1800)
+      return () => clearTimeout(t)
     }
   }, [description, editingTransaction])
 
+  const dateValue = useMemo(() => {
+    // yyyy-mm-dd para input date
+    const d = date
+    const yyyy = d.getFullYear()
+    const mm = String(d.getMonth() + 1).padStart(2, '0')
+    const dd = String(d.getDate()).padStart(2, '0')
+    return `${yyyy}-${mm}-${dd}`
+  }, [date])
+
   const handleAddTag = () => {
-    if (tagInput && !tags.includes(tagInput)) {
-      setTags([...tags, tagInput])
-      setTagInput('')
-    }
+    const clean = sanitizeString(tagInput, 50)
+    if (!clean) return
+    const next = validateTags([...(tags ?? []), clean])
+    setTags(next)
+    setTagInput('')
   }
 
-  const handleRemoveTag = (tag: string) => {
-    setTags(tags.filter(t => t !== tag))
-  }
+  const handleRemoveTag = (tag: string) => setTags(tags.filter((t) => t !== tag))
 
-  // Upload de imagem
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
 
-    // Limita tamanho (2MB)
+    // pré-check rápido (antes do base64)
     if (file.size > 2 * 1024 * 1024) {
-      alert('Imagem muito grande! Máximo 2MB')
+      alert('Imagem muito grande! Máximo 2MB.')
+      e.target.value = ''
       return
     }
 
     const reader = new FileReader()
     reader.onloadend = () => {
-      const base64 = reader.result as string
+      const base64 = String(reader.result ?? '')
+
+      if (!validateImageMIME(base64)) {
+        alert('Formato inválido. Use PNG, JPG ou WEBP.')
+        e.target.value = ''
+        return
+      }
+      if (!validateImageSize(base64, 2)) {
+        alert('Imagem muito grande! Máximo 2MB.')
+        e.target.value = ''
+        return
+      }
+
       setReceipt(base64)
       setReceiptPreview(base64)
+      e.target.value = ''
     }
     reader.readAsDataURL(file)
   }
@@ -118,53 +160,19 @@ export default function TransactionForm({ editingTransaction, onClose }: Transac
     setReceiptPreview('')
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!description || !amount) return
-
-    const finalAmount = parseFloat(amount)
-    const splitAmount = isSplit ? finalAmount / parseInt(splitPeople) : finalAmount
-
-    const transactionData = {
-      description,
-      amount: splitAmount,
-      category,
-      type,
-      date,
-      tags: tags.length > 0 ? tags : undefined,
-      split: isSplit ? {
-        total: finalAmount,
-        people: parseInt(splitPeople),
-        sharedWith: splitWith.split(',').map(s => s.trim()).filter(Boolean)
-      } : undefined,
-      currency,
-      receipt: receipt || undefined,
-    }
-
-    if (editingTransaction) {
-      updateTransaction(editingTransaction.id, transactionData)
-      onClose?.()
-    } else {
-      addTransaction(transactionData)
-    }
-
-    // Reset
-    resetForm()
-    setIsOpen(false)
-  }
-
   const resetForm = () => {
+    setType('expense')
     setDescription('')
     setAmount('')
     setCategory(CATEGORIES[0])
-    setType('expense')
     setDate(new Date())
     setAutoSuggested(false)
     setTags([])
+    setTagInput('')
+    setCurrency('BRL')
     setIsSplit(false)
     setSplitPeople('2')
     setSplitWith('')
-    setCurrency('BRL')
     setReceipt('')
     setReceiptPreview('')
   }
@@ -175,182 +183,131 @@ export default function TransactionForm({ editingTransaction, onClose }: Transac
     onClose?.()
   }
 
-  // Calendário personalizado
-  const renderCalendar = () => {
-    const monthStart = startOfMonth(date)
-    const monthEnd = endOfMonth(date)
-    const days = eachDayOfInterval({ start: monthStart, end: monthEnd })
-    const startDayOfWeek = monthStart.getDay()
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
 
-    return (
-      <div className="absolute top-full mt-2 left-0 right-0 bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-4 z-50 border border-gray-200 dark:border-gray-700">
-        {/* Header do calendário */}
-        <div className="flex items-center justify-between mb-4">
-          <button
-            type="button"
-            onClick={() => setDate(new Date(date.getFullYear(), date.getMonth() - 1))}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-          >
-            ←
-          </button>
-          <h3 className="font-semibold text-gray-900 dark:text-white capitalize">
-            {format(date, 'MMMM yyyy', { locale: ptBR })}
-          </h3>
-          <button
-            type="button"
-            onClick={() => setDate(new Date(date.getFullYear(), date.getMonth() + 1))}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-          >
-            →
-          </button>
-        </div>
+    const cleanDesc = sanitizeString(description, 200)
+    const cleanCat = sanitizeString(category, 50) as Category
+    const amt = validateNumber(amount, 0, 999999999)
+    const people = Math.max(1, Math.floor(validateNumber(splitPeople, 1, 100)))
+    const cur = validateCurrency(currency)
 
-        {/* Dias da semana */}
-        <div className="grid grid-cols-7 gap-1 mb-2">
-          {['D', 'S', 'T', 'Q', 'Q', 'S', 'S'].map((day, i) => (
-            <div key={i} className="text-center text-xs font-semibold text-gray-500 dark:text-gray-400">
-              {day}
-            </div>
-          ))}
-        </div>
+    if (!cleanDesc || !Number.isFinite(amt) || amt <= 0) return
 
-        {/* Grid de dias */}
-        <div className="grid grid-cols-7 gap-1">
-          {/* Espaços vazios antes do primeiro dia */}
-          {Array.from({ length: startDayOfWeek }).map((_, i) => (
-            <div key={`empty-${i}`} />
-          ))}
+    const finalAmount = amt
+    const splitAmount = isSplit ? finalAmount / people : finalAmount
 
-          {/* Dias do mês */}
-          {days.map((day) => {
-            const isSelected = isSameDay(day, date)
-            const isTodayDate = isToday(day)
-            const isFuture = day > new Date()
+    const sharedWith = isSplit
+      ? splitWith
+          .split(',')
+          .map((s) => sanitizeString(s, 100))
+          .filter(Boolean)
+          .slice(0, 100)
+      : undefined
 
-            return (
-              <motion.button
-                key={day.toISOString()}
-                type="button"
-                whileHover={{ scale: isFuture ? 1 : 1.1 }}
-                whileTap={{ scale: isFuture ? 1 : 0.95 }}
-                onClick={() => {
-                  setDate(day)
-                  setShowCalendar(false)
-                }}
-                disabled={isFuture}
-                className={`
-                  aspect-square p-2 text-sm rounded-lg transition-all
-                  ${isSelected
-                    ? 'bg-gradient-to-br from-accent-500 to-accent-600 text-white font-bold shadow-lg scale-110'
-                    : isTodayDate
-                    ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-semibold'
-                    : isFuture
-                    ? 'text-gray-300 dark:text-gray-700 cursor-not-allowed'
-                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                  }
-                `}
-              >
-                {format(day, 'd')}
-              </motion.button>
-            )
-          })}
-        </div>
+    const payload: any = {
+      description: cleanDesc,
+      amount: splitAmount,
+      category: cleanCat,
+      type,
+      date,
+      tags: tags.length ? validateTags(tags) : undefined,
+      currency: cur,
+      split: isSplit
+        ? {
+            total: finalAmount,
+            people,
+            sharedWith: sharedWith ?? [],
+          }
+        : undefined,
+      receipt: receipt || undefined,
+    }
 
-        {/* Botões rápidos */}
-        <div className="flex gap-2 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-          <button
-            type="button"
-            onClick={() => {
-              setDate(new Date())
-              setShowCalendar(false)
-            }}
-            className="flex-1 py-2 px-3 text-sm bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-          >
-            Hoje
-          </button>
-          <button
-            type="button"
-            onClick={() => setShowCalendar(false)}
-            className="flex-1 py-2 px-3 text-sm bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-          >
-            Fechar
-          </button>
-        </div>
-      </div>
-    )
+    if (editingTransaction?.id) {
+      updateTransaction(editingTransaction.id, payload)
+      onClose?.()
+    } else {
+      addTransaction(payload)
+    }
+
+    setIsOpen(false)
+    resetForm()
   }
+
+  const convertedBRL =
+    currency !== 'BRL' && amount
+      ? (validateNumber(amount, 0, 999999999) * validateNumber((currencies as any)[currency], 0.01, 1000)).toFixed(2)
+      : null
 
   return (
     <>
-      {/* Botão flutuante (apenas se não estiver editando) */}
       {!editingTransaction && (
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
+        <button
           onClick={() => setIsOpen(true)}
           className="fixed bottom-8 right-8 bg-gradient-to-r from-accent-400 to-accent-500 text-white p-4 rounded-full shadow-2xl hover:shadow-accent-400/50 transition-shadow z-50"
+          aria-label="Adicionar transação"
         >
-          <Plus className="w-8 h-8" />
-        </motion.button>
+          <Plus className="w-6 h-6" />
+        </button>
       )}
 
-      {/* Modal */}
       <AnimatePresence>
         {isOpen && (
           <>
-            {/* Backdrop */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              onClick={handleClose}
               className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
+              onClick={handleClose}
             />
-            
-            {/* Modal Container - CENTRALIZADO */}
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+
+            <motion.div
+              initial={{ opacity: 0, y: 18, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 18, scale: 0.98 }}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4"
+              onClick={handleClose}
+            >
+              <div
+                className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-gray-200 dark:border-gray-700"
                 onClick={(e) => e.stopPropagation()}
-                className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
               >
-                {/* Header */}
-                <div className="sticky top-0 bg-gradient-to-r from-accent-500 to-accent-600 p-6 rounded-t-2xl flex items-center justify-between z-10">
-                  <h2 className="text-2xl font-bold text-white">
-                    {editingTransaction ? '✏️ Editar Transação' : '➕ Nova Transação'}
+                <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                    {editingTransaction ? 'Editar transação' : 'Nova transação'}
                   </h2>
                   <button
                     onClick={handleClose}
-                    className="text-white/80 hover:text-white transition-colors p-2 hover:bg-white/10 rounded-lg"
+                    className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                    aria-label="Fechar"
                   >
-                    <X className="w-6 h-6" />
+                    <X className="w-5 h-5 text-gray-600 dark:text-gray-300" />
                   </button>
                 </div>
 
-                {/* Form */}
-                <form onSubmit={handleSubmit} className="p-6 space-y-5">
-                  {/* Tipo: Despesa / Receita */}
+                <form onSubmit={handleSubmit} className="p-6 space-y-6">
+                  {/* Tipo */}
                   <div className="grid grid-cols-2 gap-3">
                     <button
                       type="button"
                       onClick={() => setType('expense')}
                       className={`py-3 px-4 rounded-xl font-semibold transition-all ${
                         type === 'expense'
-                          ? 'bg-red-500 text-white shadow-lg scale-105'
-                          : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                          ? 'bg-red-500 text-white shadow-lg'
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
                       }`}
                     >
                       Despesa
                     </button>
+
                     <button
                       type="button"
                       onClick={() => setType('income')}
                       className={`py-3 px-4 rounded-xl font-semibold transition-all ${
                         type === 'income'
-                          ? 'bg-green-500 text-white shadow-lg scale-105'
-                          : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                          ? 'bg-green-500 text-white shadow-lg'
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
                       }`}
                     >
                       Receita
@@ -363,31 +320,31 @@ export default function TransactionForm({ editingTransaction, onClose }: Transac
                       Descrição
                     </label>
                     <input
-                      type="text"
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-accent-400 focus:border-transparent outline-none transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-accent-400 focus:border-transparent outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                       placeholder="Ex: Uber, iFood, Mercado..."
                       required
                     />
                   </div>
 
-                  {/* Valor e Moeda */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
+                  {/* Valor / Moeda */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="sm:col-span-2">
                       <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                         Valor
                       </label>
                       <input
-                        type="number"
-                        step="0.01"
                         value={amount}
                         onChange={(e) => setAmount(e.target.value)}
-                        className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-accent-400 focus:border-transparent outline-none transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                        type="number"
+                        step="0.01"
+                        className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-accent-400 focus:border-transparent outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                         placeholder="0,00"
                         required
                       />
                     </div>
+
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                         Moeda
@@ -395,82 +352,78 @@ export default function TransactionForm({ editingTransaction, onClose }: Transac
                       <select
                         value={currency}
                         onChange={(e) => setCurrency(e.target.value as any)}
-                        className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-accent-400 focus:border-transparent outline-none transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                        className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-accent-400 focus:border-transparent outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                       >
-                        <option value="BRL">🇧🇷 BRL (R$)</option>
-                        <option value="USD">🇺🇸 USD ($)</option>
-                        <option value="EUR">🇪🇺 EUR (€)</option>
+                        <option value="BRL">BRL (R$)</option>
+                        <option value="USD">USD ($)</option>
+                        <option value="EUR">EUR (€)</option>
                       </select>
                     </div>
+
+                    {convertedBRL && (
+                      <p className="sm:col-span-3 text-sm text-gray-600 dark:text-gray-300">
+                        Equivalente: <span className="font-semibold">R$ {convertedBRL}</span>
+                      </p>
+                    )}
                   </div>
 
-                  {/* Conversão de moeda */}
-                  {currency !== 'BRL' && amount && (
-                    <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-                      <p className="text-sm text-blue-700 dark:text-blue-300">
-                        💱 Equivalente: R$ {(parseFloat(amount) * currencies[currency]).toFixed(2)}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Categoria e Data */}
-                  <div className="grid grid-cols-2 gap-4">
+                  {/* Categoria / Data */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                        Categoria
-                        {autoSuggested && (
-                          <span className="ml-2 text-xs text-green-600 dark:text-green-400">
-                            <Sparkles className="w-3 h-3 inline" /> Sugerida!
-                          </span>
-                        )}
+                        Categoria {autoSuggested ? <span className="text-accent-600">• sugerida</span> : null}
                       </label>
                       <select
                         value={category}
                         onChange={(e) => setCategory(e.target.value as Category)}
-                        className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-accent-400 focus:border-transparent outline-none transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                        className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-accent-400 focus:border-transparent outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                       >
-                        {CATEGORIES.map(cat => (
-                          <option key={cat} value={cat}>{cat}</option>
+                        {CATEGORIES.map((cat) => (
+                          <option key={cat} value={cat}>
+                            {cat}
+                          </option>
                         ))}
                       </select>
                     </div>
-                    <div className="relative">
-                      <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+
+                    <div>
+                      <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                        <CalendarIcon className="w-4 h-4" />
                         Data
                       </label>
-                      <button
-                        type="button"
-                        onClick={() => setShowCalendar(!showCalendar)}
-                        className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-left flex items-center justify-between hover:border-accent-400 transition-all"
-                      >
-                        <span>{format(date, 'dd/MM/yyyy')}</span>
-                        <CalendarIcon className="w-5 h-5" />
-                      </button>
-                      {showCalendar && renderCalendar()}
+                      <input
+                        type="date"
+                        value={dateValue}
+                        onChange={(e) => setDate(new Date(e.target.value + 'T00:00:00'))}
+                        className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-accent-400 focus:border-transparent outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      />
                     </div>
                   </div>
 
-                  {/* Upload de Comprovante */}
+                  {/* Comprovante */}
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                       Comprovante (opcional)
                     </label>
+
                     {!receiptPreview ? (
-                      <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl cursor-pointer hover:border-accent-400 transition-colors bg-gray-50 dark:bg-gray-700/50">
-                        <Upload className="w-8 h-8 text-gray-400 mb-2" />
-                        <span className="text-sm text-gray-500 dark:text-gray-400">Clique para enviar imagem</span>
-                        <span className="text-xs text-gray-400 dark:text-gray-500 mt-1">PNG, JPG até 2MB</span>
-                        <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
+                      <label className="flex items-center justify-center gap-2 w-full px-4 py-4 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-2xl cursor-pointer hover:border-accent-400 transition-colors bg-gray-50 dark:bg-gray-700/30">
+                        <Upload className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+                        <span className="text-sm text-gray-700 dark:text-gray-200">
+                          Enviar imagem (PNG/JPG/WEBP até 2MB)
+                        </span>
+                        <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
                       </label>
                     ) : (
-                      <div className="relative">
-                        <img src={receiptPreview} alt="Preview" className="w-full h-48 object-cover rounded-xl" />
+                      <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/30 p-4">
+                        <img src={receiptPreview} alt="Comprovante" className="w-full max-h-64 object-contain rounded-xl" />
                         <button
                           type="button"
                           onClick={removeReceipt}
-                          className="absolute top-2 right-2 p-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                          className="mt-3 w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-red-500 text-white font-semibold hover:bg-red-600 transition-colors"
                         >
                           <Trash2 className="w-4 h-4" />
+                          Remover comprovante
                         </button>
                       </div>
                     )}
@@ -478,94 +431,93 @@ export default function TransactionForm({ editingTransaction, onClose }: Transac
 
                   {/* Tags */}
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                      🏷️ Tags (opcional)
+                    <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                      <Tag className="w-4 h-4" />
+                      Tags (opcional)
                     </label>
+
                     <div className="flex gap-2">
                       <input
-                        type="text"
                         value={tagInput}
                         onChange={(e) => setTagInput(e.target.value)}
-                        onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddTag())}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault()
+                            handleAddTag()
+                          }
+                        }}
+                        className="flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
                         placeholder="Ex: urgente, parcelado..."
-                        className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
                       />
                       <button
                         type="button"
                         onClick={handleAddTag}
-                        className="px-4 py-2 bg-accent-500 text-white rounded-xl hover:bg-accent-600 transition-colors"
+                        className="px-4 py-2.5 rounded-xl bg-accent-500 text-white font-semibold hover:bg-accent-600 transition-colors"
                       >
-                        <Tag className="w-5 h-5" />
+                        Add
                       </button>
                     </div>
+
                     {tags.length > 0 && (
-                      <div className="flex flex-wrap gap-2 mt-3">
-                        {tags.map(tag => (
-                          <span key={tag} className="px-3 py-1 bg-accent-100 dark:bg-accent-900/30 text-accent-700 dark:text-accent-300 rounded-lg text-sm flex items-center gap-2">
-                            #{tag}
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveTag(tag)}
-                              className="hover:text-red-500"
-                            >
-                              <X className="w-3 h-3" />
-                            </button>
-                          </span>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {tags.map((t) => (
+                          <button
+                            key={t}
+                            type="button"
+                            onClick={() => handleRemoveTag(t)}
+                            className="px-3 py-1.5 rounded-full bg-accent-100 dark:bg-accent-900/30 text-accent-700 dark:text-accent-200 text-xs font-semibold hover:bg-accent-200 dark:hover:bg-accent-900/50 transition-colors"
+                            title="Remover tag"
+                          >
+                            #{t}
+                          </button>
                         ))}
                       </div>
                     )}
                   </div>
 
-                  {/* Split Expense */}
-                  <div>
-                    <label className="flex items-center gap-2 cursor-pointer">
+                  {/* Split */}
+                  <div className="rounded-2xl border border-gray-200 dark:border-gray-700 p-4">
+                    <label className="flex items-center gap-2 text-sm font-semibold text-gray-800 dark:text-gray-200">
+                      <Users className="w-4 h-4" />
                       <input
                         type="checkbox"
                         checked={isSplit}
                         onChange={(e) => setIsSplit(e.target.checked)}
                         className="w-4 h-4 text-accent-500 rounded focus:ring-accent-400"
                       />
-                      <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                        <Users className="w-4 h-4 inline mr-1" />
-                        Dividir despesa
-                      </span>
+                      Dividir despesa
                     </label>
+
                     {isSplit && (
-                      <div className="grid grid-cols-3 gap-3 mt-3">
+                      <div className="mt-3 grid grid-cols-1 sm:grid-cols-4 gap-2">
                         <input
-                          type="number"
-                          min="2"
                           value={splitPeople}
                           onChange={(e) => setSplitPeople(e.target.value)}
-                          placeholder="Nº pessoas"
-                          className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                          type="number"
+                          min={1}
+                          className="sm:col-span-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                          placeholder="Pessoas"
                         />
-                        {amount && splitPeople && (
-                          <div className="col-span-2 flex items-center text-sm text-gray-600 dark:text-gray-400">
-                            💰 R$ {(parseFloat(amount) / parseInt(splitPeople)).toFixed(2)}/pessoa
-                          </div>
-                        )}
                         <input
-                          type="text"
                           value={splitWith}
                           onChange={(e) => setSplitWith(e.target.value)}
+                          className="sm:col-span-3 px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
                           placeholder="Dividido com (ex: João, Maria)"
-                          className="col-span-3 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
                         />
                       </div>
                     )}
                   </div>
 
-                  {/* Botão Submit */}
+                  {/* Submit */}
                   <button
                     type="submit"
-                    className="w-full py-4 bg-gradient-to-r from-accent-500 to-accent-600 text-white font-bold rounded-xl hover:from-accent-600 hover:to-accent-700 transition-all shadow-lg hover:shadow-xl text-lg"
+                    className="w-full py-4 bg-gradient-to-r from-accent-500 to-accent-600 text-white font-bold rounded-xl hover:from-accent-600 hover:to-accent-700 transition-all shadow-lg hover:shadow-xl"
                   >
-                    {editingTransaction ? '💾 Salvar Alterações' : '✅ Adicionar Transação'}
+                    {editingTransaction ? 'Salvar alterações' : 'Adicionar transação'}
                   </button>
                 </form>
-              </motion.div>
-            </div>
+              </div>
+            </motion.div>
           </>
         )}
       </AnimatePresence>

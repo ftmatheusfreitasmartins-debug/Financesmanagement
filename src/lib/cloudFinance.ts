@@ -9,11 +9,26 @@ export async function getJwt(): Promise<string> {
 
 async function authed(url: string, init?: RequestInit) {
   const token = await getJwt();
+
   const headers = new Headers(init?.headers);
   headers.set("Authorization", `Bearer ${token}`);
   headers.set("content-type", "application/json");
+
   const res = await fetch(url, { ...init, headers });
-  if (!res.ok) throw new Error(await res.text());
+
+  if (!res.ok) {
+    const text = await res.text();
+    const ct = res.headers.get("content-type") || "";
+
+    if (ct.includes("text/html") || text.includes("<!DOCTYPE html")) {
+      throw new Error(
+        "Netlify Functions indisponível (provável 404 no next dev). Use `netlify dev` para CloudSync."
+      );
+    }
+
+    throw new Error(text || `HTTP ${res.status}`);
+  }
+
   return res;
 }
 

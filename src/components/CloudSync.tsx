@@ -19,6 +19,9 @@ export default function CloudSync() {
         if (remote?.data?.state) {
           useFinanceStore.setState(remote.data.state);
         }
+      } catch (err) {
+        // Não quebra a página se a function não existir / 401 / offline / etc.
+        console.warn("CloudSync indisponível:", err);
       } finally {
         ready.current = true;
       }
@@ -26,8 +29,8 @@ export default function CloudSync() {
 
     const unsub = useFinanceStore.subscribe((state) => {
       if (!ready.current) return;
-      if (t.current) window.clearTimeout(t.current);
 
+      if (t.current) window.clearTimeout(t.current);
       t.current = window.setTimeout(() => {
         cloudSave(state).catch(() => {});
       }, 800);

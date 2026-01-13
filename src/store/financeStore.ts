@@ -1,4 +1,4 @@
-import create from 'zustand'
+import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import type {
   FinanceState,
@@ -10,6 +10,7 @@ import type {
   FinancialProjection,
   SpendingPattern,
 } from '@/types/finance'
+
 import {
   startOfMonth,
   format,
@@ -21,18 +22,22 @@ import {
   isBefore,
   getDay,
 } from 'date-fns'
-import {
-  sanitizeString,
-  validateNumber,
-  validateDate,
-  validateArray,
-  validateTags,
-  validateCurrency,
-  generateSecureId,
-  safeJSONParse,
-  deepSanitize,
-  rateLimiter,
-} from '@/utils/security'
+
+ import {
+   sanitizeString,
+   validateNumber,
+   validateDate,
+   validateArray,
+   validateTags,
+   validateCurrency,
+   validateImageMIME,
+   validateImageSize,
+   generateSecureId,
+   safeJSONParse,
+   deepSanitize,
+   rateLimiter,
+ } from '@/utils/security'
+
 
 type NewTransaction = Omit<Transaction, 'id'>
 type NewRecurring = Omit<RecurringTransaction, 'id' | 'active' | 'lastExecuted'>
@@ -48,7 +53,9 @@ const MAX_RECURRING = 200
 function amountInBRL(t: any, state: any): number {
   const amt = validateNumber(t?.amount, 0, 999999999)
   const currency = validateCurrency(t?.currency)
+
   if (currency === 'BRL') return amt
+
   const rate = validateNumber(t?.exchangeRate ?? state?.currencies?.[currency], 0.01, 1000)
   return amt * rate
 }
@@ -57,6 +64,7 @@ function normalizeRecurringDates(r: any): RecurringTransaction {
   const start = validateDate(r?.startDate)
   const end = r?.endDate ? validateDate(r.endDate) : undefined
   const last = r?.lastExecuted ? validateDate(r.lastExecuted) : undefined
+
   const safeEnd = end && end.getTime() < start.getTime() ? undefined : end
 
   return {
@@ -77,14 +85,21 @@ export const useFinanceStore = create<FinanceState>()(
       budgets: [],
       savedMoney: [],
       darkMode: false,
-      currencies: { BRL: 1, USD: 5.85, EUR: 6.15 },
 
-      setSalary: (salary: number) => set({ salary: validateNumber(salary, 0, 10000000) }),
+      currencies: {
+        BRL: 1,
+        USD: 5.85,
+        EUR: 6.15,
+      },
+
+      setSalary: (salary: number) => {
+        set({ salary: validateNumber(salary, 0, 10000000) })
+      },
 
       addTransaction: (transaction: NewTransaction) => {
         if (!rateLimiter.check('addTransaction', 10, 1000)) return
 
-        return set((state) => {
+        set((state) => {
           const sanitized: Transaction = {
             id: generateSecureId(),
             description: sanitizeString(transaction.description, 200),
@@ -104,15 +119,16 @@ export const useFinanceStore = create<FinanceState>()(
                   total: validateNumber((transaction as any).split.total, 0, 999999999),
                   people: validateNumber((transaction as any).split.people, 1, 100),
                   sharedWith: validateArray<string>((transaction as any).split.sharedWith, 100).map((s) =>
-                  sanitizeString(String(s), 100),
-                 ),
+                    sanitizeString(String(s), 100),
+                  ),
                 }
               : undefined,
-            receipt: (transaction as any).receipt ? sanitizeString((transaction as any).receipt, 500000) : undefined,
+            receipt: (transaction as any).receipt
+              ? sanitizeString((transaction as any).receipt, 500000)
+              : undefined,
           }
 
           return {
-            ...state,
             transactions: [sanitized, ...state.transactions].slice(0, MAX_TRANSACTIONS),
           }
         })
@@ -123,51 +139,28 @@ export const useFinanceStore = create<FinanceState>()(
           transactions: state.transactions.filter((t) => t.id !== sanitizeString(id, 100)),
         })),
 
-      // ✅ CORRIGIDO: agora aceita receipt null para remover
       updateTransaction: (id: string, updates: Partial<Transaction>) => {
         const sanitizedId = sanitizeString(id, 100)
-
-        return set((state) => ({
+        set((state) => ({
           transactions: state.transactions.map((t) => {
             if (t.id !== sanitizedId) return t
-
-            const next: Transaction = {
+            return {
               ...t,
-              description:
-                updates.description !== undefined ? sanitizeString(updates.description as any, 200) : t.description,
-              amount: updates.amount !== undefined ? validateNumber(updates.amount as any, 0, 999999999) : t.amount,
-              category: updates.category !== undefined ? sanitizeString(updates.category as any, 50) : t.category,
-              type: updates.type !== undefined ? (updates.type === 'income' ? 'income' : 'expense') : t.type,
-              date: updates.date !== undefined ? validateDate(updates.date as any) : validateDate(t.date as any),
-              tags: updates.tags !== undefined ? validateTags(updates.tags as any) : t.tags,
-              currency: updates.currency !== undefined ? validateCurrency(updates.currency as any) : (t as any).currency,
+              description: updates.description ? sanitizeString(updates.description, 200) : t.description,
+              amount: updates.amount !== undefined ? validateNumber(updates.amount, 0, 999999999) : t.amount,
+              category: updates.category ? sanitizeString(updates.category, 50) : t.category,
+              type: updates.type || t.type,
+              date: updates.date ? validateDate(updates.date) : validateDate(t.date),
+              tags: updates.tags ? validateTags(updates.tags as any) : t.tags,
+              currency: updates.currency ? validateCurrency(updates.currency) : (t as any).currency,
               exchangeRate:
                 (updates as any).exchangeRate !== undefined
                   ? validateNumber((updates as any).exchangeRate, 0.01, 1000)
                   : (t as any).exchangeRate,
+              receipt: Object.prototype.hasOwnProperty.call(updates as any, 'receipt')
+                ? ((updates as any).receipt ? sanitizeString((updates as any).receipt, 500000) : undefined)
+                : (t as any).receipt,
             }
-
-            // Se receipt veio no payload (mesmo null), respeita
-            if (Object.prototype.hasOwnProperty.call(updates, 'receipt')) {
-              const r = (updates as any).receipt as string | null | undefined
-              next.receipt = r ? sanitizeString(r, 500000) : undefined
-            }
-
-            // Se split veio no payload, respeita (se não veio, mantém)
-            if (Object.prototype.hasOwnProperty.call(updates, 'split')) {
-              const s = (updates as any).split
-              next.split = s
-                ? {
-                    total: validateNumber(s.total, 0, 999999999),
-                    people: validateNumber(s.people, 1, 100),
-                    sharedWith: validateArray<string>((updates as any).split.sharedWith, 100).map((s) =>
-                    sanitizeString(String(s), 100),
-                   ),
-                  }
-                : undefined
-            }
-
-            return next
           }),
         }))
       },
@@ -182,8 +175,8 @@ export const useFinanceStore = create<FinanceState>()(
             amount: validateNumber(transaction.amount, 0, 999999999),
             category: sanitizeString(transaction.category, 50),
             type: transaction.type === 'income' ? 'income' : 'expense',
-            frequency: ['daily', 'weekly', 'monthly', 'yearly'].includes((transaction as any).frequency)
-              ? (transaction as any).frequency
+            frequency: ['daily', 'weekly', 'monthly', 'yearly'].includes(transaction.frequency)
+              ? transaction.frequency
               : 'monthly',
             startDate: validateDate(transaction.startDate),
             endDate: transaction.endDate ? validateDate(transaction.endDate) : undefined,
@@ -193,7 +186,7 @@ export const useFinanceStore = create<FinanceState>()(
             lastExecuted: undefined,
           })
 
-          return { ...state, recurringTransactions: [...state.recurringTransactions, sanitized] }
+          return { recurringTransactions: [...state.recurringTransactions, sanitized] }
         }),
 
       removeRecurringTransaction: (id: string) =>
@@ -212,7 +205,7 @@ export const useFinanceStore = create<FinanceState>()(
         set((state) => ({
           recurringTransactions: state.recurringTransactions.map((r) => {
             if (r.id !== sanitizeString(id, 100)) return r
-            const merged = { ...r, ...deepSanitize(updates as any) }
+            const merged = { ...r, ...deepSanitize(updates) }
             return normalizeRecurringDates(merged)
           }),
         })),
@@ -224,10 +217,10 @@ export const useFinanceStore = create<FinanceState>()(
         state.recurringTransactions.forEach((recurring) => {
           if (!recurring.active) return
 
-          const lastExecuted = recurring.lastExecuted ? validateDate(recurring.lastExecuted as any) : null
-          const startDate = validateDate(recurring.startDate as any)
-          let nextDate = lastExecuted ?? startDate
+          const lastExecuted = recurring.lastExecuted ? validateDate(recurring.lastExecuted) : null
+          const startDate = validateDate(recurring.startDate)
 
+          let nextDate = lastExecuted || startDate
           switch (recurring.frequency) {
             case 'daily':
               nextDate = addDays(nextDate, 1)
@@ -243,8 +236,10 @@ export const useFinanceStore = create<FinanceState>()(
               break
           }
 
-          const shouldExecute = isBefore(nextDate, now) || nextDate.toDateString() === now.toDateString()
-          const endOk = !recurring.endDate || isBefore(now, validateDate(recurring.endDate as any))
+          const shouldExecute =
+            isBefore(nextDate, now) || nextDate.toDateString() === now.toDateString()
+
+          const endOk = !recurring.endDate || isBefore(now, validateDate(recurring.endDate))
 
           if (!shouldExecute || !endOk) return
 
@@ -257,7 +252,7 @@ export const useFinanceStore = create<FinanceState>()(
             recurring: true,
             recurringId: recurring.id,
             tags: recurring.tags,
-            currency: recurring.currency ?? 'BRL',
+            currency: recurring.currency || 'BRL',
           } as any)
 
           set((s) => ({
@@ -271,7 +266,6 @@ export const useFinanceStore = create<FinanceState>()(
       addGoal: (goal: NewGoal) =>
         set((state) => {
           if (state.goals.length >= MAX_GOALS) return state
-
           const sanitized: Goal = {
             id: generateSecureId(),
             name: sanitizeString(goal.name, 100),
@@ -281,8 +275,7 @@ export const useFinanceStore = create<FinanceState>()(
             category: sanitizeString(goal.category, 50),
             color: sanitizeString(goal.color, 20),
           }
-
-          return { ...state, goals: [...state.goals, sanitized] }
+          return { goals: [...state.goals, sanitized] }
         }),
 
       removeGoal: (id: string) =>
@@ -304,7 +297,6 @@ export const useFinanceStore = create<FinanceState>()(
           const sanitizedCategory = sanitizeString(category, 50)
           const validatedLimit = validateNumber(limit, 1, 999999999)
           const existingBudgets = state.budgets.filter((b) => b.category !== sanitizedCategory)
-
           return {
             budgets: [
               ...existingBudgets,
@@ -327,8 +319,7 @@ export const useFinanceStore = create<FinanceState>()(
             date: validateDate(saving.date),
             goal: saving.goal ? sanitizeString(saving.goal, 100) : undefined,
           }
-
-          return { ...state, savedMoney: [...state.savedMoney, sanitized].slice(0, MAX_SAVED_MONEY) }
+          return { savedMoney: [...state.savedMoney, sanitized].slice(0, MAX_SAVED_MONEY) }
         }),
 
       removeSavedMoney: (id: string) =>
@@ -338,7 +329,7 @@ export const useFinanceStore = create<FinanceState>()(
 
       getTotalSaved: () => {
         const state = get()
-        return state.savedMoney.reduce((sum, s) => sum + validateNumber((s as any).amount, 0, 0), 0)
+        return state.savedMoney.reduce((sum, s) => sum + validateNumber(s.amount, 0), 0)
       },
 
       toggleDarkMode: () => set((state) => ({ darkMode: !state.darkMode })),
@@ -350,9 +341,15 @@ export const useFinanceStore = create<FinanceState>()(
 
       getBalance: () => {
         const state = get()
-        const totalIncome = state.transactions.filter((t) => t.type === 'income').reduce((sum, t) => sum + amountInBRL(t, state), 0)
-        const totalExpenses = state.transactions.filter((t) => t.type === 'expense').reduce((sum, t) => sum + amountInBRL(t, state), 0)
-        const totalSaved = state.savedMoney.reduce((sum, s) => sum + validateNumber((s as any).amount, 0, 0), 0)
+        const totalIncome = state.transactions
+  .filter((t) => t.type === 'income')
+  .reduce((sum, t) => sum + amountInBRL(t, state), 0)
+
+        const totalExpenses = state.transactions
+          .filter((t) => t.type === 'expense')
+          .reduce((sum, t) => sum + amountInBRL(t, state), 0)
+
+        const totalSaved = state.savedMoney.reduce((sum, s) => sum + validateNumber(s.amount, 0), 0)
         return totalIncome - totalExpenses - totalSaved
       },
 
@@ -360,41 +357,59 @@ export const useFinanceStore = create<FinanceState>()(
 
       getTotalBalance: () => {
         const state = get()
-        const totalIncome = state.transactions.filter((t) => t.type === 'income').reduce((sum, t) => sum + amountInBRL(t, state), 0)
-        const totalExpenses = state.transactions.filter((t) => t.type === 'expense').reduce((sum, t) => sum + amountInBRL(t, state), 0)
+        const totalIncome = state.transactions
+  .filter((t) => t.type === 'income')
+  .reduce((sum, t) => sum + amountInBRL(t, state), 0)
+
+
+        const totalExpenses = state.transactions
+          .filter((t) => t.type === 'expense')
+          .reduce((sum, t) => sum + amountInBRL(t, state), 0)
+
         return totalIncome - totalExpenses
       },
 
       getTotalIncome: () => {
-        const state = get()
-        return state.transactions.filter((t) => t.type === 'income').reduce((sum, t) => sum + amountInBRL(t, state), 0)
-      },
+  const state = get()
+
+  return state.transactions
+    .filter((t) => t.type === 'income')
+    .reduce((sum, t) => sum + amountInBRL(t, state), 0)
+},
+
 
       getTotalExpenses: () => {
         const state = get()
-        return state.transactions.filter((t) => t.type === 'expense').reduce((sum, t) => sum + amountInBRL(t, state), 0)
+        return state.transactions
+          .filter((t) => t.type === 'expense')
+          .reduce((sum, t) => sum + amountInBRL(t, state), 0)
       },
 
       getTransactionsByCategory: () => {
         const state = get()
         return state.transactions
           .filter((t) => t.type === 'expense')
-          .reduce((acc: Record<string, number>, transaction: any) => {
+          .reduce((acc, transaction) => {
             const value = amountInBRL(transaction, state)
             acc[transaction.category] = (acc[transaction.category] || 0) + value
             return acc
-          }, {})
+          }, {} as Record<string, number>)
       },
 
       getMonthlyData: () => {
         const state = get()
         const last6Months = Array.from({ length: 6 }, (_, i) => {
           const date = subMonths(new Date(), 5 - i)
-          return { month: format(date, 'MMM/yy'), start: startOfMonth(date), income: 0, expenses: 0 }
+          return {
+            month: format(date, 'MMM/yy'),
+            start: startOfMonth(date),
+            income: 0,
+            expenses: 0,
+          }
         })
 
-        state.transactions.forEach((t: any) => {
-          const tDate = validateDate(t?.date)
+        state.transactions.forEach((t) => {
+          const tDate = validateDate((t as any).date)
           const monthData = last6Months.find((m) => {
             const monthEnd = startOfMonth(addMonths(m.start, 1))
             return tDate >= m.start && tDate < monthEnd
@@ -423,18 +438,159 @@ export const useFinanceStore = create<FinanceState>()(
       getFinancialProjection: (months: number): FinancialProjection[] => {
         const state = get()
         const projections: FinancialProjection[] = []
+
+        // Helpers
+        const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v))
+
+        const median = (arr: number[]) => {
+          const a = arr.filter((n) => Number.isFinite(n)).slice().sort((x, y) => x - y)
+          if (a.length === 0) return 0
+          const mid = Math.floor(a.length / 2)
+          return a.length % 2 ? a[mid] : (a[mid - 1] + a[mid]) / 2
+        }
+
+        const mean = (arr: number[]) => (arr.length ? arr.reduce((s, x) => s + x, 0) / arr.length : 0)
+
+        const std = (arr: number[]) => {
+          if (arr.length < 2) return 0
+          const m = mean(arr)
+          const v = mean(arr.map((x) => (x - m) ** 2))
+          return Math.sqrt(v)
+        }
+
+        const amountRecurringInBRL = (r: any) => {
+          const currency = validateCurrency(r?.currency)
+          const amt = validateNumber(r?.amount, 0, 999999999)
+          if (currency === 'BRL') return amt
+          const rate = validateNumber((state.currencies as any)?.[currency], 0.01, 1000)
+          return amt * rate
+        }
+
+        const addByFreq = (d: Date, freq: 'daily' | 'weekly' | 'monthly' | 'yearly') => {
+          switch (freq) {
+            case 'daily':
+              return addDays(d, 1)
+            case 'weekly':
+              return addWeeks(d, 1)
+            case 'monthly':
+              return addMonths(d, 1)
+            case 'yearly':
+              return addYears(d, 1)
+          }
+        }
+
+        const countOccurrencesInMonth = (r: any, monthStart: Date, monthEndExclusive: Date) => {
+          if (!r?.active) return 0
+          const start = validateDate(r.startDate)
+          const end = r.endDate ? validateDate(r.endDate) : null
+          const freq = (
+            r.frequency === 'daily' ||
+            r.frequency === 'weekly' ||
+            r.frequency === 'monthly' ||
+            r.frequency === 'yearly'
+          )
+            ? r.frequency
+            : 'monthly'
+
+          let cur = start
+          let guard = 0
+
+          // Avança até o mês-alvo
+          while (cur < monthStart && guard < 5000) {
+            cur = addByFreq(cur, freq)
+            guard++
+          }
+
+          let count = 0
+          while (cur < monthEndExclusive && guard < 10000) {
+            if (!end || cur <= end) count++
+            cur = addByFreq(cur, freq)
+            guard++
+          }
+
+          return count
+        }
+
+        // 1) Base mensal do histórico recente (últimos 6 meses)
+        const lookbackMonths = 6
+        const monthsBack = Array.from({ length: lookbackMonths }, (_, i) => {
+          const date = subMonths(new Date(), lookbackMonths - 1 - i)
+          return { start: startOfMonth(date), end: startOfMonth(addMonths(date, 1)) }
+        })
+
+        const variableIncomeByMonth: number[] = []
+        const variableExpensesByMonth: number[] = []
+
+        for (const m of monthsBack) {
+          let inc = 0
+          let exp = 0
+
+          for (const t of state.transactions as any[]) {
+            const d = validateDate(t?.date)
+            if (d < m.start || d >= m.end) continue
+            if (t?.recurring) continue // evita dupla contagem com recorrências futuras
+
+            const v = amountInBRL(t, state)
+            if (t.type === 'income') inc += v
+            else exp += v
+          }
+
+          variableIncomeByMonth.push(inc)
+          variableExpensesByMonth.push(exp)
+        }
+
+        const avgVarIncome = mean(variableIncomeByMonth)
+        const medVarExpenses = median(variableExpensesByMonth)
+
+        // Tendência simples (delta entre início/fim)
+        const trendIncome =
+          variableIncomeByMonth.length >= 2
+            ? (variableIncomeByMonth[variableIncomeByMonth.length - 1] - variableIncomeByMonth[0]) /
+              (variableIncomeByMonth.length - 1)
+            : 0
+
+        const trendExpenses =
+          variableExpensesByMonth.length >= 2
+            ? (variableExpensesByMonth[variableExpensesByMonth.length - 1] - variableExpensesByMonth[0]) /
+              (variableExpensesByMonth.length - 1)
+            : 0
+
+        // 2) Confiança baseada em volatilidade do saldo variável (receitas - despesas)
+        const netVarByMonth = variableIncomeByMonth.map((inc, idx) => inc - (variableExpensesByMonth[idx] ?? 0))
+        const netMean = mean(netVarByMonth)
+        const netStd = std(netVarByMonth)
+        const cv = netStd / (Math.abs(netMean) + 1)
+        const baseConfidence = clamp(95 - cv * 35, 30, 95)
+
+        // 3) Projeção mês a mês
         let currentBalance = state.getBalance()
 
-        const avgIncome = state.getTotalIncome() + state.salary
-        const avgExpenses = state.getTotalExpenses()
-
         for (let i = 1; i <= months; i++) {
-          const projectedIncome = avgIncome
-          const projectedExpenses = avgExpenses
-          const monthlyChange = projectedIncome - projectedExpenses
-          currentBalance += monthlyChange
+          const monthStart = startOfMonth(addMonths(new Date(), i))
+          const monthEnd = startOfMonth(addMonths(monthStart, 1))
 
-          const confidence = Math.max(100 - i * 10, 30)
+          // Recorrências futuras (somadas de verdade)
+          let recurringIncome = 0
+          let recurringExpenses = 0
+
+          for (const r of state.recurringTransactions as any[]) {
+            if (!r?.active) continue
+            const count = countOccurrencesInMonth(r, monthStart, monthEnd)
+            const total = count * amountRecurringInBRL(r)
+            if (r.type === 'income') recurringIncome += total
+            else recurringExpenses += total
+          }
+
+          // Variáveis: média/mediana + tendência
+          const variableIncome = Math.max(0, avgVarIncome + trendIncome * (i - 1))
+          const variableExpenses = Math.max(0, medVarExpenses + trendExpenses * (i - 1))
+
+          const projectedIncome = state.salary + variableIncome + recurringIncome
+          const projectedExpenses = variableExpenses + recurringExpenses
+
+          currentBalance += projectedIncome - projectedExpenses
+
+          const confidence = clamp(baseConfidence - i * 3, 20, 95)
 
           projections.push({
             month: format(addMonths(new Date(), i), 'MMM/yy'),
@@ -454,42 +610,43 @@ export const useFinanceStore = create<FinanceState>()(
 
         const patterns = daysOfWeek.map((dayName, dayIndex) => {
           const dayTransactions = state.transactions.filter(
-            (t: any) => t.type === 'expense' && getDay(validateDate(t?.date)) === dayIndex,
+            (t) => t.type === 'expense' && getDay(validateDate((t as any).date)) === dayIndex,
           )
-
-          const total = dayTransactions.reduce((sum: number, t: any) => sum + amountInBRL(t, state), 0)
+          const total = dayTransactions.reduce((sum, t) => sum + amountInBRL(t, state), 0)
           const average = dayTransactions.length > 0 ? total / dayTransactions.length : 0
-
           return { dayOfWeek: dayName, averageSpending: average, percentage: 0, trend: 'stable' as const }
         })
 
         const totalAvg = patterns.reduce((sum, p) => sum + p.averageSpending, 0)
-
         return patterns.map((p) => ({
           ...p,
           percentage: totalAvg > 0 ? (p.averageSpending / totalAvg) * 100 : 0,
           trend:
-            p.averageSpending > totalAvg * 1.2 ? 'increasing' : p.averageSpending < totalAvg * 0.8 ? 'decreasing' : 'stable',
+            p.averageSpending > totalAvg * 1.2
+              ? 'increasing'
+              : p.averageSpending < totalAvg * 0.8
+                ? 'decreasing'
+                : 'stable',
         }))
       },
 
       getTaggedTransactions: (tag: string) => {
         const state = get()
-        return state.transactions.filter((t: any) => t.tags?.includes(tag))
+        return state.transactions.filter((t) => t.tags?.includes(tag))
       },
 
       getAllTags: () => {
         const state = get()
         const tags = new Set<string>()
-        state.transactions.forEach((t: any) => t.tags?.forEach((tag: string) => tags.add(tag)))
+        state.transactions.forEach((t) => t.tags?.forEach((tag) => tags.add(tag)))
         return Array.from(tags)
       },
 
       convertCurrency: (amount: number, from: 'BRL' | 'USD' | 'EUR', to: 'BRL' | 'USD' | 'EUR') => {
         const state = get()
         if (from === to) return amount
-        const amountInBRLValue = from === 'BRL' ? amount : amount * (state.currencies as any)[from]
-        return to === 'BRL' ? amountInBRLValue : amountInBRLValue / (state.currencies as any)[to]
+        const amountInBRLValue = from === 'BRL' ? amount : amount * state.currencies[from]
+        return to === 'BRL' ? amountInBRLValue : amountInBRLValue / state.currencies[to]
       },
 
       exportData: () => {
@@ -523,7 +680,7 @@ export const useFinanceStore = create<FinanceState>()(
             description: sanitizeString(t.description, 200),
             amount: validateNumber(t.amount, 0, 999999999),
             category: sanitizeString(t.category, 50),
-            type: t.type === 'income' ? 'income' : 'expense',
+            type: (t.type === 'income' ? 'income' : 'expense') as 'income' | 'expense',
             date: validateDate(t.date),
             currency: validateCurrency(t.currency),
             tags: validateTags(t.tags),
@@ -531,7 +688,7 @@ export const useFinanceStore = create<FinanceState>()(
             recurring: Boolean(t.recurring),
             recurringId: t.recurringId ? sanitizeString(t.recurringId, 100) : undefined,
             receipt: t.receipt ? sanitizeString(t.receipt, 500000) : undefined,
-          })) as Transaction[]
+          }))
 
           const validatedRecurring = validateArray<any>(sanitized.recurringTransactions, MAX_RECURRING).map((r) =>
             normalizeRecurringDates({
@@ -548,7 +705,7 @@ export const useFinanceStore = create<FinanceState>()(
               currency: validateCurrency(r.currency),
               active: Boolean(r.active),
             }),
-          ) as RecurringTransaction[]
+          )
 
           const validatedGoals = validateArray<any>(sanitized.goals, MAX_GOALS).map((g) => ({
             id: generateSecureId(),
@@ -558,14 +715,14 @@ export const useFinanceStore = create<FinanceState>()(
             deadline: validateDate(g.deadline),
             category: sanitizeString(g.category, 50),
             color: sanitizeString(g.color, 20),
-          })) as Goal[]
+          }))
 
           const validatedBudgets = validateArray<any>(sanitized.budgets, MAX_BUDGETS).map((b) => ({
             category: sanitizeString(b.category, 50),
             limit: validateNumber(b.limit, 1, 999999999),
             spent: validateNumber(b.spent, 0, 999999999),
-            period: b.period === 'weekly' ? 'weekly' : 'monthly',
-          })) as Budget[]
+            period: (b.period === 'weekly' ? 'weekly' : 'monthly') as 'weekly' | 'monthly',
+          }))
 
           const validatedSaved = validateArray<any>(sanitized.savedMoney, MAX_SAVED_MONEY).map((s) => ({
             id: generateSecureId(),
@@ -573,7 +730,7 @@ export const useFinanceStore = create<FinanceState>()(
             description: sanitizeString(s.description, 200),
             date: validateDate(s.date),
             goal: s.goal ? sanitizeString(s.goal, 100) : undefined,
-          })) as SavedMoney[]
+          }))
 
           set({
             salary: validateNumber(sanitized.salary, 0, 10000000),

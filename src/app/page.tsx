@@ -35,7 +35,6 @@ import QuickSummary from '@/components/QuickSummary'
 import SmartAlerts from '@/components/SmartAlerts'
 import RecurringManager from '@/components/RecurringManager'
 import RecurringCalendar from '@/components/RecurringCalendar'
-import FinancialProjection from '@/components/FinancialProjection'
 import SpendingPatterns from '@/components/SpendingPatterns'
 import TagsManager from '@/components/TagsManager'
 import SplitExpense from '@/components/SplitExpense'
@@ -415,9 +414,6 @@ export default function Home() {
 
         {currentView === 'analytics' && (
           <>
-            <div className="mb-8">
-              <FinancialProjection />
-            </div>
 
             <div className="mb-8">
               <MonthlyComparison />
@@ -456,11 +452,7 @@ export default function Home() {
               <CurrencyConverter />
               <SplitExpense />
             </div>
-
-            <div className="mb-8">
-              <FinancialProjection />
-            </div>
-
+            
             <div className="mb-8">
               <SpendingPatterns />
             </div>
