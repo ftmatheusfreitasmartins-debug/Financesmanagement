@@ -222,7 +222,7 @@ export default function Home() {
               </div>
               <div className="min-w-0">
                 <h1 className="text-base sm:text-xl md:text-2xl font-bold text-gray-900 dark:text-white truncate">
-                  Finance Manager Pro
+                  Finance Manager
                 </h1>
                 <p className="hidden sm:block text-xs text-gray-500 dark:text-gray-400 truncate">
                   Controle financeiro inteligente
@@ -541,27 +541,38 @@ export default function Home() {
 
       <TransactionForm />
 
-      <footer className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg border-t border-gray-200 dark:border-gray-700 mt-16">
-        <div className="container mx-auto px-6 py-6">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <p className="text-sm text-gray-600 dark:text-gray-400 text-center md:text-left">
-              © 2025 Finance Manager Pro. Todos os dados salvos localmente no seu navegador.
-            </p>
-            <div className="flex flex-wrap items-center justify-center gap-2">
-              <span className="text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-3 py-1 rounded-full font-medium flex items-center gap-1">
-                🔒 100% Privado
-              </span>
-              <span className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-3 py-1 rounded-full font-medium flex items-center gap-1">
-                ⚡ Tempo Real
-              </span>
-              <span className="text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-3 py-1 rounded-full font-medium flex items-center gap-1">
-                <Zap className="w-3 h-3" />
-                Avançado
-              </span>
-            </div>
-          </div>
-        </div>
-      </footer>
+<footer className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg border-t border-gray-200 dark:border-gray-700 mt-16">
+  <div className="container mx-auto px-6 py-8">
+    <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+      {/* Left */}
+      <div className="text-center md:text-left">
+        <p className="text-sm font-semibold text-gray-900 dark:text-white leading-tight">
+          Finance Manager
+          <span className="text-gray-500 dark:text-gray-400 font-medium"> • © {new Date().getFullYear()}</span>
+        </p>
+        <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+          Seus dados ficam salvos em nosso servidor com criptografia.
+        </p>
+      </div>
+
+      {/* Right */}
+      <div className="flex flex-wrap items-center justify-center gap-2">
+        <span className="text-xs px-3 py-1 rounded-full font-semibold border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300">
+          Total privacidade
+        </span>
+
+        <span className="text-xs px-3 py-1 rounded-full font-semibold border border-sky-200 dark:border-sky-800 bg-sky-50 dark:bg-sky-900/20 text-sky-700 dark:text-sky-300">
+          Servidor seguro
+        </span>
+
+        <span className="text-xs px-3 py-1 rounded-full font-semibold border border-violet-200 dark:border-violet-800 bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-300">
+          Recursos avançados
+        </span>
+      </div>
+    </div>
+  </div>
+</footer>
+
     </div>
   )
 }

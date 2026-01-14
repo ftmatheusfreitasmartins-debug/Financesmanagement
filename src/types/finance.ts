@@ -1,3 +1,5 @@
+export type Currency = 'BRL' | 'USD' | 'EUR'
+
 export interface Transaction {
   id: string
   description: string
@@ -13,7 +15,7 @@ export interface Transaction {
     people: number
     sharedWith: string[]
   }
-  currency?: 'BRL' | 'USD' | 'EUR'
+  currency?: Currency
   exchangeRate?: number
   originalAmount?: number
   receipt?: string // Base64 da imagem do comprovante
@@ -30,7 +32,7 @@ export interface RecurringTransaction {
   endDate?: Date
   lastExecuted?: Date
   tags?: string[]
-  currency?: 'BRL' | 'USD' | 'EUR'
+  currency?: Currency
   active: boolean
 }
 
@@ -87,61 +89,62 @@ export interface FinanceState {
     EUR: number
     BRL: number
   }
-  
+
   // Salary
   setSalary: (salary: number) => void
-  
+
   // Transactions
   addTransaction: (transaction: Omit<Transaction, 'id'>) => void
   removeTransaction: (id: string) => void
   updateTransaction: (id: string, transaction: Partial<Transaction>) => void
-  
+
   // Recurring Transactions
   addRecurringTransaction: (transaction: Omit<RecurringTransaction, 'id' | 'active' | 'lastExecuted'>) => void
   removeRecurringTransaction: (id: string) => void
   toggleRecurringTransaction: (id: string) => void
   updateRecurringTransaction: (id: string, updates: Partial<RecurringTransaction>) => void
   processRecurringTransactions: () => void
-  
+
   // Goals
   addGoal: (goal: Omit<Goal, 'id' | 'currentAmount'>) => void
   removeGoal: (id: string) => void
   updateGoalProgress: (id: string, amount: number) => void
-  
+
   // Budgets
   setBudget: (category: string, limit: number, period: 'monthly' | 'weekly') => void
   removeBudget: (category: string) => void
-  
+
   // Savings
   addSavedMoney: (saving: Omit<SavedMoney, 'id'>) => void
   removeSavedMoney: (id: string) => void
   getTotalSaved: () => number
-  
+
   // Settings
   toggleDarkMode: () => void
   updateCurrency: (currency: 'USD' | 'EUR', rate: number) => void
 
-  refreshCurrencyRates: () => Promise<void>
+  // IMPORTANTE: agora retorna boolean e aceita force (manual).
+  refreshCurrencyRates: (opts?: { force?: boolean }) => Promise<boolean>
 
   // Computed
-  getBalance: () => number // Saldo disponível (já descontado dinheiro guardado)
-  getAvailableBalance: () => number // Alias para getBalance
-  getTotalBalance: () => number // Saldo total (sem descontar dinheiro guardado)
+  getBalance: () => number
+  getAvailableBalance: () => number
+  getTotalBalance: () => number
   getTotalIncome: () => number
   getTotalExpenses: () => number
   getTransactionsByCategory: () => Record<string, number>
   getMonthlyData: () => { month: string; income: number; expenses: number }[]
   getCategoryBudgetStatus: () => { category: string; spent: number; limit: number; percentage: number }[]
-  
+
   // Advanced Analytics
   getFinancialProjection: (months: number) => FinancialProjection[]
   getSpendingPatterns: () => SpendingPattern[]
   getTaggedTransactions: (tag: string) => Transaction[]
   getAllTags: () => string[]
-  
+
   // Multi-currency
-  convertCurrency: (amount: number, from: 'BRL' | 'USD' | 'EUR', to: 'BRL' | 'USD' | 'EUR') => number
-  
+  convertCurrency: (amount: number, from: Currency, to: Currency) => number
+
   // Export/Import
   exportData: () => string
   importData: (data: string) => void
@@ -161,20 +164,12 @@ export const CATEGORIES = [
   'Outros',
 ] as const
 
-export type Category = typeof CATEGORIES[number]
+export type Category = (typeof CATEGORIES)[number]
 
-export const GOAL_COLORS = [
-  '#3b82f6',
-  '#10b981',
-  '#f59e0b',
-  '#ef4444',
-  '#8b5cf6',
-  '#ec4899',
-  '#14b8a6',
-]
+export const GOAL_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6'] as const
 
-export const CURRENCY_SYMBOLS = {
+export const CURRENCY_SYMBOLS: Record<Currency, string> = {
   BRL: 'R$',
   USD: '$',
-  EUR: '€'
+  EUR: '€',
 }
