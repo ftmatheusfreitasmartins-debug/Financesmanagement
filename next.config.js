@@ -16,7 +16,7 @@ const nextConfig = {
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: blob: https:",
               "font-src 'self' data:",
-              "connect-src 'self' https://*.netlify.app https://identity.netlify.com",
+              "connect-src 'self' https://*.netlify.app https://identity.netlify.com https://api.frankfurter.dev",
               "frame-src 'self' https://identity.netlify.com",
               "frame-ancestors 'none'",
             ].join('; '),
