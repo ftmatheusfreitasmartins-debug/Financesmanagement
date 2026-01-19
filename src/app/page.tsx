@@ -140,11 +140,7 @@ export default function Home() {
         void updateUserData()
       }, 2000)
     }
-
-    if (salary === 0 && isAuthenticated) {
-      setShowSalaryModal(true)
-    }
-
+    
     return () => {
       if (interval) window.clearInterval(interval)
     }
